@@ -91,6 +91,16 @@ button{font-family:var(--f);cursor:pointer;color:var(--ink)}
 .joy[hidden]{display:none}
 .joy.look{width:90px;height:90px;margin:-45px;border-style:dashed}.joy.look::before{content:"👁"}.joy.look i{width:30px;height:30px;margin:-15px;opacity:.7}
 .cell{cursor:pointer}
+.dress{position:fixed;left:0;right:0;bottom:0;z-index:7;padding:14px 16px calc(env(safe-area-inset-bottom) + 14px);background:linear-gradient(#08131f00,#08131fe8 12%,#08131f);display:flex;flex-direction:column;gap:8px;max-height:58vh;overflow:auto}
+.dress[hidden]{display:none}
+.dh{text-align:center}.dh small{font:600 .62rem var(--f);letter-spacing:.42em;color:var(--brass);text-transform:uppercase}.dh h2{margin:2px 0;font:italic 500 1.6rem var(--f);color:#fff8e6}.dh .hint{font-size:.9rem}
+.sliders{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}
+.sliders label{display:flex;flex-direction:column;gap:2px;font:600 .9rem var(--f);color:var(--brass2)}
+.sliders input{width:100%;-webkit-appearance:none;appearance:none;height:26px;background:transparent}
+.sliders input::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(90deg,#c9a45c44,var(--brass),#c9a45c44)}
+.sliders input::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-11px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#f3dc9a,#b98d3e);box-shadow:0 2px 8px #000a}
+.sliders input::-moz-range-track{height:4px;background:var(--brass)}.sliders input::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#e0c070;border:0}
+.drow{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:8px}.drow .btn{padding:12px 6px;text-align:center;font-size:.98rem}
 .story{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border:1px solid #c9a45c55;border-radius:6px;background:radial-gradient(circle at 50% 35%,#1c3a58,#0a1626 75%)}.story img{width:180px;height:180px;object-fit:contain;filter:drop-shadow(0 8px 14px #000b);animation:bob 2.2s ease-in-out infinite}
 .tale{margin:0;font:italic 500 1.2rem/1.5 var(--f);color:#fff8e6}
 .title{position:fixed;inset:0;z-index:12;background:radial-gradient(ellipse at 50% 30%,#1a3a5ccc,#060e1af0 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
@@ -117,7 +127,7 @@ button{font-family:var(--f);cursor:pointer;color:var(--ink)}
 .end h2{font-size:2rem;text-align:center}
 #loading{position:fixed;inset:0;display:grid;place-items:center;font:italic 400 1.5rem var(--f);color:var(--brass2);background:radial-gradient(ellipse at 50% 40%,#13283f,#060e1a);z-index:20}
 </style>
-  <script type="module" crossorigin src="./assets/index-B0anX4Bh.js"></script>
+  <script type="module" crossorigin src="./assets/index-D-zFCpKm.js"></script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -136,6 +146,7 @@ button{font-family:var(--f);cursor:pointer;color:var(--ink)}
 <div class="joy" id="joy" hidden><i></i></div>
 <div class="joy look" id="joy2" hidden><i></i></div>
 <div class="toast" id="toast"></div>
+<div class="dress" id="dress" hidden></div>
 <div class="bt" id="bt" hidden></div>
 <div class="flash" id="flash"></div>
 <div class="ov" id="ov" hidden></div>
