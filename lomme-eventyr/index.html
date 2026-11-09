@@ -89,6 +89,8 @@ button{font-family:var(--f);cursor:pointer;color:var(--ink)}
 .joy::before{content:'N';position:absolute;top:4px;left:50%;transform:translateX(-50%);font:600 .62rem var(--f);color:var(--brass2);letter-spacing:.1em}
 .joy i{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#f3dc9a,#b98d3e);box-shadow:0 2px 10px #000a}
 .joy[hidden]{display:none}
+.joy.look{width:90px;height:90px;margin:-45px;border-style:dashed}.joy.look::before{content:"👁"}.joy.look i{width:30px;height:30px;margin:-15px;opacity:.7}
+.cell{cursor:pointer}
 .title{position:fixed;inset:0;z-index:12;background:radial-gradient(ellipse at 50% 30%,#1a3a5ccc,#060e1af0 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
 .title[hidden]{display:none}
 .title small{font:600 .7rem var(--f);letter-spacing:.5em;color:var(--brass);text-transform:uppercase}
@@ -113,7 +115,7 @@ button{font-family:var(--f);cursor:pointer;color:var(--ink)}
 .end h2{font-size:2rem;text-align:center}
 #loading{position:fixed;inset:0;display:grid;place-items:center;font:italic 400 1.5rem var(--f);color:var(--brass2);background:radial-gradient(ellipse at 50% 40%,#13283f,#060e1a);z-index:20}
 </style>
-  <script type="module" crossorigin src="./assets/index-BnchnH5j.js"></script>
+  <script type="module" crossorigin src="./assets/index-RNHe9sDQ.js"></script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -130,6 +132,7 @@ button{font-family:var(--f);cursor:pointer;color:var(--ink)}
 <div class="goal" id="goal" hidden></div>
 <div class="fade" id="fade"></div>
 <div class="joy" id="joy" hidden><i></i></div>
+<div class="joy look" id="joy2" hidden><i></i></div>
 <div class="toast" id="toast"></div>
 <div class="bt" id="bt" hidden></div>
 <div class="flash" id="flash"></div>
