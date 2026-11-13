@@ -77,6 +77,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 .me{display:flex;gap:10px;align-items:center}.me img{width:92px;image-rendering:pixelated;background:#0004;border-radius:10px;padding:4px}.me .grid{flex:1;grid-template-columns:repeat(2,minmax(46px,64px))}
 .mapw{position:relative;border-radius:10px;overflow:hidden;border:2px solid #0008}.mapw img{display:block;width:100%;image-rendering:pixelated}
 .mk{position:absolute;transform:translate(-50%,-50%);font-style:normal;font-size:22px;text-shadow:0 0 3px #000,0 0 3px #000}.mk.me{color:#fff;font-size:20px}.mk.far{opacity:.75;font-size:16px}
+#msg{top:auto!important;bottom:calc(env(safe-area-inset-bottom) + 262px)}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:#7ec0ee;color:#fff;font:700 22px system-ui,sans-serif;z-index:20;text-align:center;padding:20px}
 </style>
 </head>
@@ -827,7 +828,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     if (n < CHAIN.length) return CHAIN[n];
     var k = n - CHAIN.length;
     if (k % 2 === 0 && EXTRA[k / 2]) return { type: 'craft', title: 'Lav ' + itemName(EXTRA[k / 2]).toLowerCase(), want: [[EXTRA[k / 2], 1]] };
-    var K = KINDS_B[k % KINDS_B.length], round = Math.floor(k / KINDS_B.length), mul = 1 + round * 0.25;
+    var K = KINDS_B[k % KINDS_B.length], round = Math.floor(k / KINDS_B.length), mul = Math.min(3, 1 + round * 0.25);
     return { type: 'build', title: 'Byg ' + K[1] + (round ? ' nr. ' + (round + 1) : ''), build: K[0], want: K[2].map(function (w) { return [w[0], Math.ceil(w[1] * mul)]; }) };
   }
   // building sites lie in a spiral around where you started, far enough apart that nothing ever bumps into anything
@@ -856,7 +857,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     return rows;
   }
   function pickFor(blockId) { // the smallest pickaxe that can break this block, or 0
-    var d = B[blockId]; if (!d || d.tool !== 'pick') return d && d.tool === 'axe' ? AXE : 0;
+    var d = B[blockId]; if (!d || d.tool !== 'pick') return 0; // wood and earth need no tool
     return PICK + (d.tier || 0);
   }
   function toolGood(want) { // do you hold a tool at least as good as the wanted one?
@@ -864,13 +865,16 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     return base0 === AXE || TIER_RANK[id % 10] >= TIER_RANK[want % 10];
   }
   function ownGood(want) { for (var i = 0; i < 5; i++) { var id = Math.floor(want / 10) * 10 + i; if (count(id) > 0 && (Math.floor(want / 10) * 10 === AXE || TIER_RANK[i] >= TIER_RANK[want % 10])) return id; } return 0; }
+  var siteCache = [];
+  function onSite(x, z) { while (siteCache.length < siteNo + 1) siteCache.push(sitePos(siteCache.length + 1)); for (var q = 0; q < siteCache.length; q++) if (Math.abs(x - siteCache[q].x) <= 7 && Math.abs(z - siteCache[q].z) <= 8) return true; return false; }
   function findNearest(b) { // the nearest block of this kind in the chunks around you (a little rather one you can see)
     var px = player.x, py = player.y + 1, pz = player.z, pcx = Math.floor(px) >> 4, pcz = Math.floor(pz) >> 4, best = 1e9, out = null;
     for (var a = -2; a <= 2; a++) for (var e = -2; e <= 2; e++) {
       var c = chunks.get(ckey(pcx + a, pcz + e)); if (!c) continue; var d = c.data, x0 = c.cx * CS, z0 = c.cz * CS;
       for (var i = 0; i < d.length; i++) {
         if (d[i] !== b) continue;
-        var x = x0 + (i & 15), z = z0 + ((i >> 4) & 15), y = i >> 8, dist = Math.abs(x + 0.5 - px) + Math.abs(y + 0.5 - py) * 1.5 + Math.abs(z + 0.5 - pz);
+        var x = x0 + (i & 15), z = z0 + ((i >> 4) & 15), y = i >> 8; if (onSite(x, z)) continue;
+        var dist = Math.abs(x + 0.5 - px) + Math.abs(y + 0.5 - py) * 1.5 + Math.abs(z + 0.5 - pz);
         if (dist >= best) continue;
         var open = !OPAQUE[getBlock(x + 1, y, z)] || !OPAQUE[getBlock(x - 1, y, z)] || !OPAQUE[getBlock(x, y + 1, z)] || !OPAQUE[getBlock(x, y, z + 1)] || !OPAQUE[getBlock(x, y, z - 1)];
         if (!open) dist += 6; if (dist < best) { best = dist; out = { x: x, y: y, z: z }; }
@@ -879,7 +883,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     return out;
   }
   var beacon = new THREE.Group();
-  beacon.add(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 60, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xffe060, transparent: true, opacity: 0.4, depthWrite: false, fog: false, side: THREE.DoubleSide })));
+  beacon.add(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 60, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xffe060, transparent: true, opacity: 0.32, depthWrite: false, fog: false, side: THREE.DoubleSide })));
   beacon.children[0].position.y = 30; beacon.visible = false; scene.add(beacon);
   var sitePad = new THREE.Mesh(new THREE.RingGeometry(1.6, 2.2, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe060, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide })); sitePad.visible = false; scene.add(sitePad);
   function arrowTo(x, z) { // an arrow that turns to point the way, and how far it is
@@ -996,7 +1000,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   }
   function stepBuild(dt) {
     buildJob.t += dt; var n = 0;
-    while (buildQ.length && n < 3 && buildJob.t > 0.03) { var b = buildQ.shift(); setBlock(b[0], b[1], b[2], b[3], true); if (n === 0) burst(b[0], b[1], b[2], b[3], 0xffe060); n++; }
+    while (buildQ.length && n < 3 && buildJob.t > 0.03) { var b = buildQ.shift(); setBlock(b[0], b[1], b[2], b[3], true); if (n === 0 && buildQ.length % 4 === 0) burst(b[0], b[1], b[2], b[3], 0xffe060); n++; }
     if (n) buildJob.t = 0;
     if (!buildQ.length) {
       var S = buildJob.site, kind = buildJob.kind; buildJob = null;
@@ -1019,7 +1023,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   }
   function showHand(id) {
     if (handMesh) { hand.remove(handMesh); handMesh.geometry.dispose(); handMesh.material.dispose(); }
-    if (!id) { handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.1, 0.42), new THREE.MeshBasicMaterial({ color: 0xe8b890 })); handMesh.rotation.set(-1.0, 0, 0.25); handMesh.position.set(0.1, -0.35, 0); }
+    if (!id) { handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.9, 0.3), new THREE.MeshBasicMaterial({ color: 0xe8b890 })); handMesh.rotation.set(-1.0, 0, 0.25); handMesh.position.set(0.25, -0.5, 0); }
     else if (B[id] && id !== TORCH) { handMesh = new THREE.Mesh(cubeGeo(id), new THREE.MeshBasicMaterial({ map: atlas, vertexColors: true })); handMesh.rotation.set(0.25, 0.7, 0); }
     else {
       var tx = handTex[id]; if (!tx) { tx = handTex[id] = new THREE.TextureLoader().load(ICONS[id]); tx.magFilter = THREE.NearestFilter; tx.minFilter = THREE.NearestFilter; tx.generateMipmaps = false; }
@@ -1156,7 +1160,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   requestAnimationFrame(frame);
 
   // for automated checks
-  window.__KLODS__ = { get mission() { return mission; }, get mIndex() { return mIndex; }, get stars() { return stars; }, get building() { return !!buildJob; }, get waypoints() { return waypoints; }, get spawn() { return spawnPt; }, get kid() { return kid; }, missionAt: missionAt, TELE: TELE, openMap: openMap, needRows: needRows,
+  window.__KLODS__ = { get mission() { return mission; }, get mIndex() { return mIndex; }, get stars() { return stars; }, get building() { return !!buildJob; }, get waypoints() { return waypoints; }, get spawn() { return spawnPt; }, get kid() { return kid; }, missionAt: missionAt, TELE: TELE, setKid: function (k) { kid = k; }, openMap: openMap, needRows: needRows,
     player: player, getBlock: getBlock, setBlock: setBlock, target: function () { return aim; }, hits: function (x, y, z) { return hits(player, x, y, z); }, give: give, count: count, craft: craft, RECIPES: RECIPES,
     spawnMonster: spawnMonster, monsters: monsters, setDay: function (t) { dayT = t; }, light: function () { return dayLight; }, lightAt: lightAt, chunks: chunks, hot: hot, wear: wear, useFromBag: useFromBag, hurt: hurt, armorPoints: armorPoints, save: saveNow,
     ids: { LOG: LOG, PLANKS: PLANKS, STICK: STICK, BENCH: BENCH, TORCH: TORCH, COBBLE: COBBLE, IRON: IRON, PICK: PICK, SWORD: SWORD, HELM: HELM, CHEST: CHEST, DIRT: DIRT }, setMode: function (c, p) { creative = c; peaceful = p; drawHotbar(); } };
