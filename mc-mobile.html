@@ -15,6 +15,10 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 #cross::before,#cross::after{content:'';position:absolute;background:#fff;box-shadow:0 0 0 1px #0008}
 #cross::before{left:12px;top:2px;width:2px;height:22px}
 #cross::after{left:2px;top:12px;width:22px;height:2px}
+#prog{position:fixed;left:50%;top:calc(50% + 22px);width:60px;height:7px;margin-left:-30px;border-radius:4px;background:#0008;z-index:3;pointer-events:none;overflow:hidden;display:none}
+#prog i{display:block;height:100%;width:0;background:#fff}
+#tint{position:fixed;inset:0;pointer-events:none;z-index:2;background:#2a6ad8;opacity:0;transition:opacity .15s}
+#hurt{position:fixed;inset:0;pointer-events:none;z-index:2;background:radial-gradient(circle,#f000 40%,#f00a);opacity:0;transition:opacity .25s}
 #stick{position:fixed;left:calc(env(safe-area-inset-left) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);width:132px;height:132px;border-radius:50%;background:#ffffff26;border:2px solid #ffffff80;z-index:5;touch-action:none}
 #knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px;border-radius:50%;background:#ffffffb0;border:2px solid #00000040;pointer-events:none}
 #btns{position:fixed;right:calc(env(safe-area-inset-right) + 14px);bottom:calc(env(safe-area-inset-bottom) + 14px);width:176px;height:176px;z-index:5;pointer-events:none}
@@ -24,23 +28,44 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 #bJump{right:0;bottom:0}
 #bBreak{right:92px;bottom:0;background:#ff6a4a40}
 #bPlace{right:0;bottom:92px;background:#5ad06a40}
-#hotbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:5px;padding:5px;border-radius:12px;background:#00000055;z-index:6;touch-action:none}
-.slot{width:46px;height:46px;border-radius:8px;border:3px solid #ffffff40;background:#0004;padding:3px;touch-action:none}
-.slot canvas{width:100%;height:100%;display:block;image-rendering:pixelated;border-radius:4px;pointer-events:none}
-.slot.sel{border-color:#fff;background:#fff3;transform:translateY(-4px)}
-@media (orientation:portrait){#hotbar{bottom:calc(env(safe-area-inset-bottom) + 208px)}}
-@media (max-height:420px){#stick{width:112px;height:112px}.slot{width:40px;height:40px}}
+#hotwrap{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:9;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+#stats{display:flex;gap:10px;font-size:13px;line-height:1;color:#fff;text-shadow:0 1px 2px #000;white-space:nowrap}
+#hearts span{color:#ff3a4a}#hearts span.off{color:#0007}
+#hotbar{display:flex;gap:4px;padding:4px;border-radius:12px;background:#00000066;touch-action:none;pointer-events:auto}
+.slot{position:relative;width:42px;height:42px;border-radius:8px;border:3px solid #ffffff40;background:#0004 center/70% no-repeat;image-rendering:pixelated;touch-action:none}
+.slot.sel{border-color:#fff;background-color:#fff3;transform:translateY(-4px)}
+.slot em,.it em{position:absolute;right:2px;bottom:0;font:700 11px system-ui,sans-serif;font-style:normal;color:#fff;text-shadow:0 0 2px #000,0 1px 2px #000}
+@media (orientation:portrait){#hotwrap{bottom:calc(env(safe-area-inset-bottom) + 204px)}}
+@media (max-width:420px){.slot{width:38px;height:38px}}
+@media (max-height:420px){#stick{width:112px;height:112px}.slot{width:36px;height:36px}}
 #top{position:fixed;left:calc(env(safe-area-inset-left) + 10px);top:calc(env(safe-area-inset-top) + 10px);display:flex;gap:8px;z-index:6}
-#top button{border:0;border-radius:10px;background:#00000055;color:#fff;font:600 13px system-ui,sans-serif;padding:8px 12px;touch-action:none}
-#msg{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 54px);transform:translateX(-50%);background:#000a;color:#fff;font:600 14px system-ui,sans-serif;padding:8px 14px;border-radius:10px;z-index:7;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#top button,.pbtn{border:0;border-radius:10px;background:#00000066;color:#fff;font:600 14px system-ui,sans-serif;padding:9px 13px;touch-action:manipulation}
+#msg{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 58px);transform:translateX(-50%);background:#000a;color:#fff;font:600 14px system-ui,sans-serif;padding:8px 14px;border-radius:10px;z-index:12;opacity:0;transition:opacity .3s;pointer-events:none;max-width:92vw;text-align:center}
 #msg.on{opacity:1}
+#ov{position:fixed;inset:0;z-index:8;background:#000a;display:flex;justify-content:center;align-items:flex-start;padding:calc(env(safe-area-inset-top) + 10px) 10px calc(env(safe-area-inset-bottom) + 70px)}
+#ov[hidden]{display:none}
+@media (orientation:portrait){#ov{padding-bottom:calc(env(safe-area-inset-bottom) + 264px)}}
+.panel{width:min(100%,520px);max-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#2b2f3a;border:3px solid #11131a;border-radius:14px;padding:12px;color:#fff;display:flex;flex-direction:column;gap:8px}
+.panel h2{margin:0;font:800 18px system-ui,sans-serif;display:flex;justify-content:space-between;align-items:center}
+.panel h3{margin:6px 0 0;font:700 13px system-ui,sans-serif;color:#aab;text-transform:uppercase;letter-spacing:.08em}
+.panel p{margin:0;font:500 13px/1.35 system-ui,sans-serif;color:#ccd}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:5px}
+.it{position:relative;aspect-ratio:1;border-radius:8px;border:2px solid #0006;background:#0005 center/68% no-repeat;image-rendering:pixelated}
+.it.on{border-color:#ffd24a}
+.rec{display:flex;align-items:center;gap:8px;padding:6px;border-radius:10px;background:#0004;border:2px solid #0000}
+.rec.ok{border-color:#5ad06a;background:#5ad06a22}
+.rec .it{width:40px;flex:none}
+.rec div{flex:1;min-width:0}.rec b{display:block;font:700 14px system-ui,sans-serif}.rec small{font:500 12px system-ui,sans-serif;color:#bbc}
+.rec.no{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row .pbtn{flex:1;background:#4a5068}.pbtn.g{background:#3a9a4a}.pbtn.r{background:#b8483a}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:#7ec0ee;color:#fff;font:700 22px system-ui,sans-serif;z-index:20;text-align:center;padding:20px}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
-<div id="cross"></div>
-<div id="top"><button id="bNew">🌍 Ny verden</button></div>
+<div id="tint"></div><div id="hurt"></div>
+<div id="cross"></div><div id="prog"><i></i></div>
+<div id="top"><button id="bBag">🎒 Taske</button><button id="bMenu">⚙️</button></div>
 <div id="msg"></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="btns">
@@ -48,292 +73,537 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   <button class="act" id="bBreak"><b>⛏️</b>Hak</button>
   <button class="act" id="bJump"><b>⬆️</b>Hop</button>
 </div>
-<div id="hotbar"></div>
+<div id="hotwrap"><div id="stats"><span id="hearts"></span><span id="armor"></span><span id="clock"></span></div><div id="hotbar"></div></div>
+<div id="ov" hidden></div>
 <div id="load">Bygger verden…</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
 (function () {
-  if (typeof THREE === 'undefined') { document.getElementById('load').textContent = 'Kunne ikke hente Three.js. Tjek internettet og prøv igen.'; return; }
+  var $ = function (s) { return document.querySelector(s); };
+  if (typeof THREE === 'undefined') { $('#load').textContent = 'Kunne ikke hente Three.js. Tjek internettet og prøv igen.'; return; }
 
-  /* ---------- the world: a grid of blocks ---------- */
-  var WX = 64, WY = 40, WZ = 64, CH = 16;             // world size in blocks, and the size of one chunk
-  var AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, WOOD = 4, LEAVES = 5, SAND = 6, BEDROCK = 7;
-  var HOTBAR = [GRASS, DIRT, STONE, WOOD, LEAVES, SAND];
-  var NAMES = { 1: 'Græs', 2: 'Jord', 3: 'Sten', 4: 'Træ', 5: 'Blade', 6: 'Sand' };
-  var SAVE_KEY = 'klodsverden-v1';
-  var blocks = new Uint8Array(WX * WY * WZ);
-  var edits = {};                                      // what the player changed: index -> block (saved on the phone)
-  var seed = 1337;
+  /* =====================================================================
+     Blocks and things
+     ===================================================================== */
+  var AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, LOG = 4, LEAVES = 5, SAND = 6, BEDROCK = 7, WATER = 8, PLANKS = 9, COBBLE = 10,
+    COAL_ORE = 11, IRON_ORE = 12, GOLD_ORE = 13, CRYS_ORE = 14, GLASS = 15, TORCH = 17, BENCH = 18, FURNACE = 19, BED = 20, SNOW = 21;
+  var STICK = 100, COAL = 101, IRON = 102, GOLD = 103, CRYSTAL = 104, APPLE = 105;
+  var PICK = 110, AXE = 120, SWORD = 130, HELM = 140, CHEST = 150, LEGS = 160, BOOTS = 170; // + tier
+  // block: n name, t pictures [top, bottom, side], h seconds to break by hand, tool that helps, tier of pickaxe needed, d what it drops
+  var B = {};
+  B[GRASS] = { n: 'Græs', t: [0, 2, 1], h: 0.6, d: DIRT }; B[DIRT] = { n: 'Jord', t: [2, 2, 2], h: 0.6 };
+  B[STONE] = { n: 'Sten', t: [3, 3, 3], h: 3, tool: 'pick', d: COBBLE }; B[LOG] = { n: 'Træstamme', t: [5, 5, 4], h: 1.6, tool: 'axe' };
+  B[LEAVES] = { n: 'Blade', t: [6, 6, 6], h: 0.3 }; B[SAND] = { n: 'Sand', t: [7, 7, 7], h: 0.6 };
+  B[BEDROCK] = { n: 'Grundfjeld', t: [8, 8, 8], h: Infinity }; B[WATER] = { n: 'Vand', t: [9, 9, 9], h: Infinity };
+  B[PLANKS] = { n: 'Planker', t: [10, 10, 10], h: 1.4, tool: 'axe' }; B[COBBLE] = { n: 'Brosten', t: [11, 11, 11], h: 3, tool: 'pick' };
+  B[COAL_ORE] = { n: 'Kul i sten', t: [12, 12, 12], h: 3.5, tool: 'pick', d: COAL }; B[IRON_ORE] = { n: 'Jernmalm', t: [13, 13, 13], h: 4, tool: 'pick', tier: 1 };
+  B[GOLD_ORE] = { n: 'Guldmalm', t: [14, 14, 14], h: 4, tool: 'pick', tier: 2 }; B[CRYS_ORE] = { n: 'Krystal i sten', t: [15, 15, 15], h: 4.5, tool: 'pick', tier: 2, d: CRYSTAL };
+  B[GLASS] = { n: 'Glas', t: [16, 16, 16], h: 0.4 }; B[TORCH] = { n: 'Fakkel', t: [17, 17, 17], h: 0.05 };
+  B[BENCH] = { n: 'Arbejdsbord', t: [18, 10, 19], h: 1.6, tool: 'axe' }; B[FURNACE] = { n: 'Ovn', t: [11, 11, 20], h: 3, tool: 'pick' };
+  B[BED] = { n: 'Seng', t: [22, 10, 23], h: 0.8 }; B[SNOW] = { n: 'Sne', t: [24, 2, 25], h: 0.5 };
+  var OPAQUE = [], SOLID = [];
+  for (var bi = 0; bi < 32; bi++) { OPAQUE[bi] = !!B[bi] && bi !== WATER && bi !== GLASS && bi !== TORCH; SOLID[bi] = !!B[bi] && bi !== WATER && bi !== TORCH; }
+  var TIER = ['Træ', 'Sten', 'Jern', 'Guld', 'Krystal'], TIER_COL = ['#a07840', '#8c8c90', '#dcdce0', '#f0c830', '#50e0e0'], TIER_MAT = [PLANKS, COBBLE, IRON, GOLD, CRYSTAL];
+  var TIER_SPEED = [2, 3.5, 5, 7, 8], TIER_RANK = [0, 1, 2, 2, 3], SWORD_DMG = [4, 5, 6, 6, 8];
+  var ATIER = ['Jern', 'Guld', 'Krystal'], ATIER_COL = ['#dcdce0', '#f0c830', '#50e0e0'], ATIER_MAT = [IRON, GOLD, CRYSTAL];
+  var ARMOR_PTS = { 140: [2, 2, 3], 150: [6, 5, 8], 160: [5, 3, 6], 170: [2, 1, 3] }, ARMOR_SLOT = { 140: 'head', 150: 'chest', 160: 'legs', 170: 'feet' };
+  function itemName(id) {
+    if (B[id]) return B[id].n;
+    if (id === STICK) return 'Pind'; if (id === COAL) return 'Kul'; if (id === IRON) return 'Jernbarre'; if (id === GOLD) return 'Guldbarre'; if (id === CRYSTAL) return 'Krystal'; if (id === APPLE) return 'Æble';
+    var base = Math.floor(id / 10) * 10, t = id % 10;
+    if (base === PICK) return TIER[t] + 'hakke'; if (base === AXE) return TIER[t] + 'økse'; if (base === SWORD) return TIER[t] + 'sværd';
+    if (base === HELM) return ATIER[t] + 'hjelm'; if (base === CHEST) return ATIER[t] + 'brynje'; if (base === LEGS) return ATIER[t] + 'bukser'; if (base === BOOTS) return ATIER[t] + 'støvler';
+    return '?';
+  }
+  function armorBase(id) { var b = Math.floor(id / 10) * 10; return ARMOR_SLOT[b] ? b : 0; }
 
-  function idx(x, y, z) { return (y * WZ + z) * WX + x; }
-  function inside(x, y, z) { return x >= 0 && y >= 0 && z >= 0 && x < WX && y < WY && z < WZ; }
-  function getBlock(x, y, z) { return inside(x, y, z) ? blocks[idx(x, y, z)] : AIR; }
-  // for walking: the edges of the world are walls and the bottom is a floor
-  function solidAt(x, y, z) { if (y < 0) return true; if (y >= WY) return false; if (x < 0 || z < 0 || x >= WX || z >= WZ) return true; return blocks[idx(x, y, z)] !== AIR; }
+  /* recipes: what you get, what it costs, and where it is made ('' anywhere, bench, furnace) */
+  var RECIPES = [
+    { out: [PLANKS, 4], cost: [[LOG, 1]], st: '' }, { out: [STICK, 4], cost: [[PLANKS, 2]], st: '' }, { out: [BENCH, 1], cost: [[PLANKS, 4]], st: '' },
+    { out: [TORCH, 4], cost: [[COAL, 1], [STICK, 1]], st: '' }, { out: [FURNACE, 1], cost: [[COBBLE, 8]], st: 'bench' }, { out: [BED, 1], cost: [[PLANKS, 3], [LEAVES, 3]], st: 'bench' }
+  ];
+  TIER_MAT.forEach(function (m, t) {
+    RECIPES.push({ out: [PICK + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [AXE + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [SWORD + t, 1], cost: [[m, 2], [STICK, 1]], st: 'bench' });
+  });
+  ATIER_MAT.forEach(function (m, t) {
+    RECIPES.push({ out: [HELM + t, 1], cost: [[m, 5]], st: 'bench' }, { out: [CHEST + t, 1], cost: [[m, 8]], st: 'bench' }, { out: [LEGS + t, 1], cost: [[m, 7]], st: 'bench' }, { out: [BOOTS + t, 1], cost: [[m, 4]], st: 'bench' });
+  });
+  RECIPES.push({ out: [IRON, 1], cost: [[IRON_ORE, 1], [COAL, 1]], st: 'furnace' }, { out: [GOLD, 1], cost: [[GOLD_ORE, 1], [COAL, 1]], st: 'furnace' },
+    { out: [GLASS, 1], cost: [[SAND, 1], [COAL, 1]], st: 'furnace' }, { out: [STONE, 2], cost: [[COBBLE, 2], [COAL, 1]], st: 'furnace' });
 
-  /* ---------- terrain: smooth hills from layered noise, sand in the low places, trees ---------- */
-  function hash2(x, z, s) { var n = Math.sin(x * 127.1 + z * 311.7 + s * 74.7) * 43758.5453; return n - Math.floor(n); }
-  function smooth(t) { return t * t * (3 - 2 * t); }
-  function noise2(x, z, s) {
-    var ix = Math.floor(x), iz = Math.floor(z), fx = smooth(x - ix), fz = smooth(z - iz);
-    var a = hash2(ix, iz, s), b = hash2(ix + 1, iz, s), c = hash2(ix, iz + 1, s), d = hash2(ix + 1, iz + 1, s);
-    return a + (b - a) * fx + (c - a) * fz + (a - b - c + d) * fx * fz;
-  }
-  function heightAt(x, z) {
-    var h = noise2(x / 24, z / 24, seed) * 12 + noise2(x / 10, z / 10, seed + 5) * 5 + noise2(x / 4, z / 4, seed + 9) * 1.5;
-    return Math.max(3, Math.min(WY - 12, Math.floor(6 + h)));
-  }
-  function generate() {
-    blocks.fill(AIR);
-    var x, y, z, h;
-    for (z = 0; z < WZ; z++) for (x = 0; x < WX; x++) {
-      h = heightAt(x, z);
-      var sandy = h <= 11;                              // the low land is beach
-      for (y = 0; y <= h; y++) {
-        var b;
-        if (y === 0) b = BEDROCK;
-        else if (y < h - 3) b = STONE;
-        else if (sandy) b = SAND;
-        else if (y < h) b = DIRT;
-        else b = GRASS;
-        blocks[idx(x, y, z)] = b;
-      }
-    }
-    // trees: a trunk of wood with a round crown of leaves, only on grass and not at the very edge
-    for (z = 3; z < WZ - 3; z++) for (x = 3; x < WX - 3; x++) {
-      if (hash2(x, z, seed + 21) > 0.975) {
-        h = heightAt(x, z);
-        if (blocks[idx(x, h, z)] !== GRASS) continue;
-        var th = 4 + Math.floor(hash2(x, z, seed + 33) * 2);
-        for (y = 1; y <= th; y++) blocks[idx(x, h + y, z)] = WOOD;
-        for (var dy = th - 2; dy <= th + 1; dy++) {
-          var r = dy >= th ? 1 : 2;
-          for (var dz = -r; dz <= r; dz++) for (var dx = -r; dx <= r; dx++) {
-            if (Math.abs(dx) === r && Math.abs(dz) === r && (dy === th + 1 || hash2(x + dx, z + dz + dy, seed) > 0.5)) continue;
-            var bx = x + dx, by = h + dy, bz = z + dz;
-            if (inside(bx, by, bz) && blocks[idx(bx, by, bz)] === AIR) blocks[idx(bx, by, bz)] = LEAVES;
-          }
-        }
-      }
-    }
-  }
-  function loadSave() {
-    try {
-      var s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-      if (s && typeof s.seed === 'number') { seed = s.seed; edits = s.edits || {}; return s; }
-    } catch (e) { /* no save yet */ }
-    seed = Math.floor(Math.random() * 100000); edits = {};
-    return null;
-  }
-  var saveTimer = 0;
-  function saveSoon() {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(function () {
-      try { localStorage.setItem(SAVE_KEY, JSON.stringify({ seed: seed, edits: edits, p: [player.x, player.y, player.z, player.yaw, player.pitch], sel: selected })); } catch (e) { /* storage full or off */ }
-    }, 600);
-  }
-
-  /* ---------- pictures for the blocks: one small pixel picture each, drawn here (no image files) ---------- */
-  var TILE = 16, TILES = 9;                             // 0 grass top, 1 grass side, 2 dirt, 3 stone, 4 wood side, 5 wood top, 6 leaves, 7 sand, 8 bedrock
-  var atlasCanvas = document.createElement('canvas'); atlasCanvas.width = TILE * TILES; atlasCanvas.height = TILE;
+  /* =====================================================================
+     Pictures: every block and thing is drawn here as small pixel art
+     ===================================================================== */
+  var TILE = 16, ACOLS = 8, AROWS = 4;
+  var atlasCanvas = document.createElement('canvas'); atlasCanvas.width = TILE * ACOLS; atlasCanvas.height = TILE * AROWS;
   (function drawAtlas() {
     var g = atlasCanvas.getContext('2d'), rs = 7;
     function rnd() { rs = (rs * 16807) % 2147483647; return rs / 2147483647; }
-    function fill(t, base, spread, fn) {
+    function tile(t, base, spread, fn) {
+      var ox = (t % ACOLS) * TILE, oy = Math.floor(t / ACOLS) * TILE;
       for (var y = 0; y < TILE; y++) for (var x = 0; x < TILE; x++) {
-        var c = fn ? fn(x, y) : null, k = (rnd() - 0.5) * spread, col = c || base;
-        g.fillStyle = 'rgb(' + Math.max(0, Math.min(255, Math.round(col[0] + k))) + ',' + Math.max(0, Math.min(255, Math.round(col[1] + k))) + ',' + Math.max(0, Math.min(255, Math.round(col[2] + k))) + ')';
-        g.fillRect(t * TILE + x, y, 1, 1);
+        var c = (fn && fn(x, y)) || base, k = (rnd() - 0.5) * spread;
+        g.fillStyle = 'rgb(' + Math.max(0, Math.min(255, Math.round(c[0] + k))) + ',' + Math.max(0, Math.min(255, Math.round(c[1] + k))) + ',' + Math.max(0, Math.min(255, Math.round(c[2] + k))) + ')';
+        g.fillRect(ox + x, oy + y, 1, 1);
       }
     }
-    fill(0, [96, 170, 70], 34);
-    fill(1, [134, 96, 66], 28, function (x, y) { return y < 3 + ((x * 7) % 3) ? [96, 170, 70] : null; });
-    fill(2, [134, 96, 66], 28);
-    fill(3, [128, 128, 132], 26, function (x, y) { return ((x + y * 3) % 11 === 0) ? [100, 100, 106] : null; });
-    fill(4, [112, 84, 52], 16, function (x) { return x % 4 === 0 ? [88, 64, 40] : null; });
-    fill(5, [160, 128, 80], 12, function (x, y) { var d = Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5)); return d > 6.5 ? [100, 74, 46] : (Math.floor(d) % 2 === 0 ? [140, 108, 66] : null); });
-    fill(6, [58, 132, 52], 44, function (x, y) { return (x * 5 + y * 3) % 7 === 0 ? [40, 100, 40] : null; });
-    fill(7, [222, 208, 154], 20);
-    fill(8, [60, 60, 64], 40);
+    var dirt = [134, 96, 66], stone = [128, 128, 132], plank = [176, 136, 84];
+    function ore(col) { return function (x, y) { return ((x >> 1) * 5 + (y >> 1) * 3) % 7 === 0 ? col : null; }; }
+    function cob(x, y) { return (x % 5 === 0 && (y >> 2) % 2 === 0) || (y % 4 === 0) || ((x + 2) % 5 === 0 && (y >> 2) % 2 === 1) ? [84, 84, 90] : null; }
+    tile(0, [96, 170, 70], 34);
+    tile(1, dirt, 28, function (x, y) { return y < 3 + ((x * 7) % 3) ? [96, 170, 70] : null; });
+    tile(2, dirt, 28);
+    tile(3, stone, 26, function (x, y) { return ((x + y * 3) % 11 === 0) ? [100, 100, 106] : null; });
+    tile(4, [112, 84, 52], 16, function (x) { return x % 4 === 0 ? [88, 64, 40] : null; });
+    tile(5, [160, 128, 80], 12, function (x, y) { var d = Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5)); return d > 6.5 ? [100, 74, 46] : (Math.floor(d) % 2 === 0 ? [140, 108, 66] : null); });
+    tile(6, [58, 132, 52], 44, function (x, y) { return (x * 5 + y * 3) % 7 === 0 ? [40, 100, 40] : null; });
+    tile(7, [222, 208, 154], 20);
+    tile(8, [60, 60, 64], 40);
+    tile(9, [52, 112, 222], 18, function (x, y) { return (x + y * 2) % 9 === 0 ? [96, 150, 240] : null; });
+    tile(10, plank, 14, function (x, y) { return y % 4 === 3 || (x === (y >> 2) * 5 % 16) ? [130, 96, 56] : null; });
+    tile(11, [124, 124, 128], 24, cob);
+    tile(12, stone, 22, ore([34, 34, 38])); tile(13, stone, 22, ore([216, 168, 136])); tile(14, stone, 22, ore([244, 208, 60])); tile(15, stone, 22, ore([80, 226, 226]));
+    tile(16, [196, 226, 240], 6, function (x, y) { return x === 0 || y === 0 || x === 15 || y === 15 ? [236, 246, 250] : ((x - y === 3 || x - y === 4) && x > 3 && x < 11 ? [240, 250, 255] : null); });
+    tile(17, [120, 86, 50], 10, function (x, y) { return y < 4 ? [255, 214, 80] : (y < 5 ? [255, 150, 40] : null); });
+    tile(18, plank, 12, function (x, y) { return x === 0 || y === 0 || x === 15 || y === 15 || x === 7 || y === 7 ? [104, 74, 42] : null; });
+    tile(19, plank, 12, function (x, y) { return y < 3 ? [104, 74, 42] : ((x > 3 && x < 6 && y > 5 && y < 13) || (x > 8 && x < 13 && y > 5 && y < 8) ? [70, 70, 76] : null); });
+    tile(20, [124, 124, 128], 24, function (x, y) { return x > 3 && x < 12 && y > 7 && y < 14 ? (y > 10 ? [255, 150, 40] : [30, 30, 34]) : cob(x, y); });
+    tile(22, [200, 50, 50], 16, function (x, y) { return y < 5 ? [240, 240, 240] : null; });
+    tile(23, plank, 12, function (x, y) { return y < 7 ? [200, 50, 50] : null; });
+    tile(24, [240, 244, 250], 8);
+    tile(25, dirt, 28, function (x, y) { return y < 4 + ((x * 5) % 3) ? [240, 244, 250] : null; });
   })();
-  // which picture goes on which side: [top, bottom, sides]
-  var FACE_TILE = {}; FACE_TILE[GRASS] = [0, 2, 1]; FACE_TILE[DIRT] = [2, 2, 2]; FACE_TILE[STONE] = [3, 3, 3]; FACE_TILE[WOOD] = [5, 5, 4]; FACE_TILE[LEAVES] = [6, 6, 6]; FACE_TILE[SAND] = [7, 7, 7]; FACE_TILE[BEDROCK] = [8, 8, 8];
+  var ICONS = {};
+  (function drawIcons() {
+    function blockIcon(id) { var c = document.createElement('canvas'); c.width = c.height = TILE; var t = B[id].t[2]; c.getContext('2d').drawImage(atlasCanvas, (t % ACOLS) * TILE, Math.floor(t / ACOLS) * TILE, TILE, TILE, 0, 0, TILE, TILE); return c.toDataURL(); }
+    function art(rows, cols) {
+      var c = document.createElement('canvas'); c.width = c.height = TILE; var g = c.getContext('2d'), ox = Math.floor((TILE - rows[0].length) / 2), oy = Math.floor((TILE - rows.length) / 2);
+      for (var y = 0; y < rows.length; y++) for (var x = 0; x < rows[y].length; x++) { var ch = rows[y][x]; if (cols[ch]) { g.fillStyle = cols[ch]; g.fillRect(ox + x, oy + y, 1, 1); } }
+      return c.toDataURL();
+    }
+    for (var id in B) if (+id !== BEDROCK && +id !== WATER) ICONS[id] = blockIcon(+id);
+    var wood = '#7a5632';
+    var P = ['...mmmmmm...', '..mm..hmmm..', '......h..mm.', '.....h....m.', '....h.....m.', '...h........', '..h.........', '.h..........', 'h...........'];
+    var A = ['......mmm...', '.....mmmmh..', '....mmmmmh..', '....mmmmh...', '.....mmh....', '......h.....', '.....h......', '....h.......', '...h........', '..h.........'];
+    var S = ['..........mm', '.........mmm', '........mmm.', '.......mmm..', '......mmm...', '.h...mmm....', '..h.mmm.....', '...hmm......', '..hhh.......', '.h...h......', 'h...........'];
+    var H = ['..mmmmmmmm..', '.mmmmmmmmmm.', '.mmmmmmmmmm.', '.mmmmmmmmmm.', '.mmm....mmm.', '.mmm....mmm.', '.mm......mm.'];
+    var C = ['mmm..mm..mmm', 'mmmmmmmmmmmm', 'mmmmmmmmmmmm', '.mmmmmmmmmm.', '.mmmmmmmmmm.', '.mmmmmmmmmm.', '.mmmmmmmmmm.', '.mmmmmmmmmm.'];
+    var Lg = ['mmmmmmmmmm', 'mmmmmmmmmm', 'mmmmmmmmmm', 'mmmm..mmmm', 'mmmm..mmmm', 'mmmm..mmmm', 'mmmm..mmmm', 'mmmm..mmmm', 'mmmm..mmmm'];
+    var Bt = ['mmm....mmm', 'mmm....mmm', 'mmm....mmm', 'mmmm..mmmm', 'mmmmm.mmmmm'];
+    TIER_COL.forEach(function (col, t) { var k = { m: col, h: wood }; ICONS[PICK + t] = art(P, k); ICONS[AXE + t] = art(A, k); ICONS[SWORD + t] = art(S, k); });
+    ATIER_COL.forEach(function (col, t) { var k = { m: col }; ICONS[HELM + t] = art(H, k); ICONS[CHEST + t] = art(C, k); ICONS[LEGS + t] = art(Lg, k); ICONS[BOOTS + t] = art(Bt, k); });
+    ICONS[STICK] = art(['........hh', '.......hh.', '......hh..', '.....hh...', '....hh....', '...hh.....', '..hh......', '.hh.......', 'hh........'], { h: wood });
+    ICONS[COAL] = art(['..kkkk..', '.kkkkkk.', 'kkgkkkkk', 'kkkkkgkk', 'kkkkkkkk', '.kkkkkk.', '..kkkk..'], { k: '#26262a', g: '#4a4a52' });
+    var bar = ['..mmmmmmmm', '.mwwwwwwmm', 'mmmmmmmmdm', 'mmmmmmmmd.', 'dddddddd..'];
+    ICONS[IRON] = art(bar, { m: '#dcdce0', w: '#ffffff', d: '#9a9aa2' }); ICONS[GOLD] = art(bar, { m: '#f0c830', w: '#fff4b0', d: '#b08a18' });
+    ICONS[CRYSTAL] = art(['...cc...', '..cwcc..', '.cwcccc.', 'ccccccdc', '.ccccdc.', '..ccdc..', '...cc...'], { c: '#50e0e0', w: '#e0ffff', d: '#2aa8b0' });
+    ICONS[APPLE] = art(['....gh..', '...gh...', '.rrrrrr.', 'rrwrrrrr', 'rrrrrrrr', 'rrrrrrrr', '.rrrrrr.', '..rrrr..'], { r: '#e03a3a', w: '#ff9a9a', g: '#4aa83a', h: wood });
+  })();
 
-  /* ---------- three.js ---------- */
-  var canvas = document.getElementById('game');
+  /* =====================================================================
+     The world: endless, made chunk by chunk as you walk
+     ===================================================================== */
+  var CS = 16, WH = 64, SEA = 28, RENDER = 4;
+  var SAVE_KEY = 'klodsverden-v2';
+  var seed = 1337, edits = {}, chunks = new Map(), lastChunk = null;
+  function hsh(x, y, z) { var h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 2147483629) ^ Math.imul(seed, 1274126177); h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
+  function sm(t) { return t * t * (3 - 2 * t); }
+  function noise2(x, z, s) {
+    var ix = Math.floor(x), iz = Math.floor(z), fx = sm(x - ix), fz = sm(z - iz), a = hsh(ix, s, iz), b = hsh(ix + 1, s, iz), c = hsh(ix, s, iz + 1), d = hsh(ix + 1, s, iz + 1);
+    return a + (b - a) * fx + (c - a) * fz + (a - b - c + d) * fx * fz;
+  }
+  function noise3(x, y, z) {
+    var ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z), fx = sm(x - ix), fy = sm(y - iy), fz = sm(z - iz);
+    function L(a, b, t) { return a + (b - a) * t; }
+    var y0 = iy + 5000, y1 = y0 + 1;
+    return L(L(L(hsh(ix, y0, iz), hsh(ix + 1, y0, iz), fx), L(hsh(ix, y0, iz + 1), hsh(ix + 1, y0, iz + 1), fx), fz), L(L(hsh(ix, y1, iz), hsh(ix + 1, y1, iz), fx), L(hsh(ix, y1, iz + 1), hsh(ix + 1, y1, iz + 1), fx), fz), fy);
+  }
+  function colHeight(x, z) { return Math.max(4, Math.min(WH - 12, Math.floor(18 + noise2(x / 96, z / 96, 11) * 26 + noise2(x / 30, z / 30, 23) * 9 + noise2(x / 9, z / 9, 37) * 2.5))); }
+  function isCave(x, y, z, h) { return y > 1 && y < h + 1 && (h > SEA + 1 || y < h - 4) && noise3(x / 13, y / 9, z / 13) > 0.7; }
+  function isTree(x, z, h) { return h > SEA + 1 && h < 46 && hsh(x, 777, z) > 0.987 && !isCave(x, h, z, h); }
+  function ckey(cx, cz) { return cx + ',' + cz; }
+  function chunkAt(cx, cz) { if (lastChunk && lastChunk.cx === cx && lastChunk.cz === cz) return lastChunk; var c = chunks.get(ckey(cx, cz)); if (c) lastChunk = c; return c; }
+  function getBlock(x, y, z) { if (y < 0 || y >= WH) return AIR; var c = chunkAt(x >> 4, z >> 4); return c ? c.data[(y * CS + (z & 15)) * CS + (x & 15)] : AIR; }
+  function solidAt(x, y, z) { if (y < 0) return true; if (y >= WH) return false; var c = chunkAt(x >> 4, z >> 4); return c ? SOLID[c.data[(y * CS + (z & 15)) * CS + (x & 15)]] : true; }
+  function topOf(x, z) { var c = chunkAt(x >> 4, z >> 4); return c ? c.hm[(z & 15) * CS + (x & 15)] : 0; }
+  function scanColumn(c, lx, lz) { var y = WH - 1; while (y > 0 && !OPAQUE[c.data[(y * CS + lz) * CS + lx]]) y--; c.hm[lz * CS + lx] = y; }
+  function scanTorches(c) { c.torches = []; for (var i = 0; i < c.data.length; i++) if (c.data[i] === TORCH) c.torches.push([c.cx * CS + i % CS, Math.floor(i / (CS * CS)), c.cz * CS + Math.floor(i / CS) % CS]); }
+  function genChunk(cx, cz) {
+    var d = new Uint8Array(CS * CS * WH), x0 = cx * CS, z0 = cz * CS, lx, lz, y, h, wx, wz;
+    for (lz = 0; lz < CS; lz++) for (lx = 0; lx < CS; lx++) {
+      wx = x0 + lx; wz = z0 + lz; h = colHeight(wx, wz);
+      var beach = h <= SEA + 1, snowy = h >= 47;
+      for (y = 0; y <= h; y++) {
+        var b;
+        if (y === 0) b = BEDROCK;
+        else if (isCave(wx, y, wz, h)) b = AIR;
+        else if (y < h - 3) {
+          b = STONE; var o = hsh(wx >> 1, (y >> 1) + 9000, wz >> 1), o2 = hsh(wx, y + 3000, wz);
+          if (o < 0.022 && o2 < 0.75) b = COAL_ORE; else if (o > 0.985 && y < 40 && o2 < 0.7) b = IRON_ORE; else if (o > 0.5 && o < 0.506 && y < 24) b = GOLD_ORE; else if (o > 0.3 && o < 0.304 && y < 16) b = CRYS_ORE;
+        }
+        else if (beach) b = SAND; else if (y < h) b = DIRT; else b = snowy ? SNOW : GRASS;
+        d[(y * CS + lz) * CS + lx] = b;
+      }
+      for (y = h + 1; y <= SEA; y++) d[(y * CS + lz) * CS + lx] = WATER;
+    }
+    // trees (also the parts of trees that stand in the chunk next door)
+    for (wz = z0 - 2; wz < z0 + CS + 2; wz++) for (wx = x0 - 2; wx < x0 + CS + 2; wx++) {
+      h = colHeight(wx, wz); if (!isTree(wx, wz, h)) continue;
+      var th = 4 + Math.floor(hsh(wx, 888, wz) * 3);
+      for (var dy = 1; dy <= th + 1; dy++) {
+        var r = dy < th - 2 ? 0 : (dy >= th ? 1 : 2);
+        for (var dz = -r; dz <= r; dz++) for (var dx = -r; dx <= r; dx++) {
+          lx = wx + dx - x0; lz = wz + dz - z0; y = h + dy; if (lx < 0 || lz < 0 || lx >= CS || lz >= CS || y >= WH) continue;
+          var i = (y * CS + lz) * CS + lx;
+          if (dx === 0 && dz === 0 && dy <= th) d[i] = LOG;
+          else if (r && d[i] === AIR && !(Math.abs(dx) === r && Math.abs(dz) === r && (dy === th + 1 || hsh(wx + dx, y, wz + dz) > 0.5))) d[i] = LEAVES;
+        }
+      }
+    }
+    var e = edits[ckey(cx, cz)]; if (e) for (var k in e) d[+k] = e[k];
+    var c = { cx: cx, cz: cz, data: d, hm: new Uint8Array(CS * CS), torches: [], mesh: null, meshT: null, dirty: true };
+    for (lz = 0; lz < CS; lz++) for (lx = 0; lx < CS; lx++) scanColumn(c, lx, lz);
+    scanTorches(c);
+    chunks.set(ckey(cx, cz), c);
+    // the chunks next door now see new neighbours
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (o) { var n = chunks.get(ckey(cx + o[0], cz + o[1])); if (n) n.dirty = true; });
+    return c;
+  }
+
+  /* =====================================================================
+     three.js and the look of the world
+     ===================================================================== */
+  var canvas = $('#game');
   var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  var scene = new THREE.Scene();
-  var SKY = 0x7ec0ee;
-  scene.background = new THREE.Color(SKY);
-  scene.fog = new THREE.Fog(SKY, 26, 62);
-  var camera = new THREE.PerspectiveCamera(70, 1, 0.1, 90);
-  camera.rotation.order = 'YXZ';
-  var atlas = new THREE.CanvasTexture(atlasCanvas);
-  atlas.magFilter = THREE.NearestFilter; atlas.minFilter = THREE.NearestFilter; atlas.generateMipmaps = false;
-  var blockMat = new THREE.MeshBasicMaterial({ map: atlas, vertexColors: true });
+  var scene = new THREE.Scene(), skyCol = new THREE.Color(0x7ec0ee);
+  scene.background = skyCol; scene.fog = new THREE.Fog(0x7ec0ee, 30, 68);
+  var camera = new THREE.PerspectiveCamera(70, 1, 0.1, 140); camera.rotation.order = 'YXZ';
+  var atlas = new THREE.CanvasTexture(atlasCanvas); atlas.magFilter = THREE.NearestFilter; atlas.minFilter = THREE.NearestFilter; atlas.generateMipmaps = false;
+  var U = { map: { value: atlas }, uDay: { value: 1 }, uFog: { value: skyCol }, uNear: { value: 30 }, uFar: { value: 68 }, uAlpha: { value: 1 } };
+  var VS = 'attribute vec3 lit; varying vec2 vUv; varying vec3 vLit; varying float vFog; uniform float uNear, uFar; void main(){ vUv = uv; vLit = lit; vec4 mv = modelViewMatrix * vec4(position, 1.0); vFog = smoothstep(uNear, uFar, -mv.z); gl_Position = projectionMatrix * mv; }';
+  var FS = 'uniform sampler2D map; uniform float uDay, uAlpha; uniform vec3 uFog; varying vec2 vUv; varying vec3 vLit; varying float vFog; void main(){ vec4 t = texture2D(map, vUv); float sky = vLit.y * uDay; float l = max(sky, vLit.z); vec3 c = t.rgb * vLit.x * (0.05 + 0.95 * l); c *= mix(vec3(1.0), vec3(1.2, 1.0, 0.72), clamp(vLit.z - sky, 0.0, 1.0)); gl_FragColor = vec4(mix(c, uFog, vFog), uAlpha); }';
+  var blockMat = new THREE.ShaderMaterial({ uniforms: U, vertexShader: VS, fragmentShader: FS });
+  var waterMat = new THREE.ShaderMaterial({ uniforms: { map: U.map, uDay: U.uDay, uFog: U.uFog, uNear: U.uNear, uFar: U.uFar, uAlpha: { value: 0.72 } }, vertexShader: VS, fragmentShader: FS, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  var sun = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshBasicMaterial({ color: 0xfff2b0, fog: false })); scene.add(sun);
+  var moon = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshBasicMaterial({ color: 0xe8eeff, fog: false })); scene.add(moon);
 
-  /* ---------- meshing: one mesh per chunk, only the faces you can see ---------- */
   var FACES = [
-    { d: [1, 0, 0], c: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]], s: 0.8, t: 2 },
-    { d: [-1, 0, 0], c: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]], s: 0.8, t: 2 },
-    { d: [0, 1, 0], c: [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]], s: 1.0, t: 0 },
-    { d: [0, -1, 0], c: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]], s: 0.5, t: 1 },
-    { d: [0, 0, 1], c: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]], s: 0.68, t: 2 },
-    { d: [0, 0, -1], c: [[1, 0, 0], [0, 0, 0], [0, 1, 0], [1, 1, 0]], s: 0.68, t: 2 }
+    { d: [1, 0, 0], c: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]], s: 0.8, t: 2 }, { d: [-1, 0, 0], c: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]], s: 0.8, t: 2 },
+    { d: [0, 1, 0], c: [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]], s: 1.0, t: 0 }, { d: [0, -1, 0], c: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]], s: 0.5, t: 1 },
+    { d: [0, 0, 1], c: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]], s: 0.68, t: 2 }, { d: [0, 0, -1], c: [[1, 0, 0], [0, 0, 0], [0, 1, 0], [1, 1, 0]], s: 0.68, t: 2 }
   ];
-  var UV = [[0, 0], [1, 0], [1, 1], [0, 1]];
-  var CXN = WX / CH, CZN = WZ / CH, chunks = [];
-  function buildChunk(cx, cz) {
-    var pos = [], col = [], uv = [], ind = [], n = 0, x, y, z, f, k;
-    var x0 = cx * CH, z0 = cz * CH, pad = 0.02 / TILES;
-    for (y = 0; y < WY; y++) for (z = z0; z < z0 + CH; z++) for (x = x0; x < x0 + CH; x++) {
-      var b = blocks[idx(x, y, z)]; if (b === AIR) continue;
-      var tiles = FACE_TILE[b];
+  var UVC = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  function hasNeighbours(c) { return chunks.has(ckey(c.cx + 1, c.cz)) && chunks.has(ckey(c.cx - 1, c.cz)) && chunks.has(ckey(c.cx, c.cz + 1)) && chunks.has(ckey(c.cx, c.cz - 1)); }
+  function makeGeo(o) {
+    if (!o.ind.length) return null;
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(o.pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(o.uv, 2)); g.setAttribute('lit', new THREE.Float32BufferAttribute(o.lit, 3));
+    g.setIndex(o.ind); g.computeBoundingSphere(); return g;
+  }
+  function buildMesh(c) {
+    var x0 = c.cx * CS, z0 = c.cz * CS, d = c.data, S = { pos: [], uv: [], lit: [], ind: [], n: 0 }, T = { pos: [], uv: [], lit: [], ind: [], n: 0 };
+    // heights of this chunk and one column around it (for daylight), and the torches near enough to shine in here
+    var hp = new Uint8Array(18 * 18), lx, lz, y, f, k, torches = [];
+    for (lz = -1; lz <= CS; lz++) for (lx = -1; lx <= CS; lx++) hp[(lz + 1) * 18 + lx + 1] = (lx >= 0 && lz >= 0 && lx < CS && lz < CS) ? c.hm[lz * CS + lx] : topOf(x0 + lx, z0 + lz);
+    for (var a = -1; a <= 1; a++) for (var b2 = -1; b2 <= 1; b2++) { var nc = chunks.get(ckey(c.cx + a, c.cz + b2)); if (nc) for (k = 0; k < nc.torches.length; k++) torches.push(nc.torches[k]); }
+    function at(x, yy, z) { if (yy < 0 || yy >= WH) return AIR; if (x >= 0 && z >= 0 && x < CS && z < CS) return d[(yy * CS + z) * CS + x]; return getBlock(x0 + x, yy, z0 + z); }
+    function sky(x, yy, z) { var i = (z + 1) * 18 + x + 1; if (yy > hp[i]) return 1; return (yy > hp[i - 1] || yy > hp[i + 1] || yy > hp[i - 18] || yy > hp[i + 18]) ? 0.55 : 0.16; }
+    function torch(x, yy, z) { var best = 0; for (var q = 0; q < torches.length; q++) { var t = torches[q], dd = Math.abs(t[0] - x0 - x) + Math.abs(t[1] - yy) + Math.abs(t[2] - z0 - z); if (dd < 10) { var v = 1 - dd / 10; if (v > best) best = v; } } return best; }
+    function quad(o, p, tile, shade, sl, tl) {
+      var tc = tile % ACOLS, tr = Math.floor(tile / ACOLS), u0 = (tc + 0.02) / ACOLS, u1 = (tc + 0.98) / ACOLS, v0 = 1 - (tr + 0.98) / AROWS, v1 = 1 - (tr + 0.02) / AROWS;
+      for (var q = 0; q < 4; q++) { o.pos.push(p[q][0], p[q][1], p[q][2]); o.uv.push(UVC[q][0] ? u1 : u0, UVC[q][1] ? v1 : v0); o.lit.push(shade, sl, tl); }
+      o.ind.push(o.n, o.n + 1, o.n + 2, o.n, o.n + 2, o.n + 3); o.n += 4;
+    }
+    for (y = 0; y < WH; y++) for (lz = 0; lz < CS; lz++) for (lx = 0; lx < CS; lx++) {
+      var b = d[(y * CS + lz) * CS + lx]; if (b === AIR) continue;
+      if (b === TORCH) { // a little stick with a flame
+        var sl0 = sky(lx, y, lz), w0 = 0.42, w1 = 0.58, hh = 0.62;
+        for (f = 0; f < 6; f++) { if (f === 3) continue; var F0 = FACES[f], pp = []; for (k = 0; k < 4; k++) pp.push([lx + (F0.c[k][0] ? w1 : w0), y + F0.c[k][1] * hh, lz + (F0.c[k][2] ? w1 : w0)]); quad(S, pp, 17, 1, sl0, 1); }
+        continue;
+      }
+      var tiles = B[b].t, clear = b === WATER || b === GLASS, out = clear ? T : S;
       for (f = 0; f < 6; f++) {
-        var F = FACES[f];
-        if (getBlock(x + F.d[0], y + F.d[1], z + F.d[2]) !== AIR) continue;
-        // a little darker in holes and under things: looks at the blocks next to each corner
-        var tile = tiles[F.t], u0 = tile / TILES + pad, u1 = (tile + 1) / TILES - pad;
-        for (k = 0; k < 4; k++) {
-          var c = F.c[k];
-          pos.push(x + c[0], y + c[1], z + c[2]);
-          var shade = F.s;
-          if (f === 2) { // soft shadow on the ground beside higher blocks
-            var sx = c[0] ? 1 : -1, sz = c[2] ? 1 : -1, occ = 0;
-            if (getBlock(x + sx, y + 1, z) !== AIR) occ++;
-            if (getBlock(x, y + 1, z + sz) !== AIR) occ++;
-            if (getBlock(x + sx, y + 1, z + sz) !== AIR) occ++;
-            shade *= 1 - occ * 0.14;
-          }
-          col.push(shade, shade, shade);
-          uv.push(UV[k][0] ? u1 : u0, UV[k][1] ? 0.98 : 0.02);
-        }
-        ind.push(n, n + 1, n + 2, n, n + 2, n + 3); n += 4;
+        var F = FACES[f], nx = lx + F.d[0], ny = y + F.d[1], nz = lz + F.d[2], nb = at(nx, ny, nz);
+        if (OPAQUE[nb] || nb === b) continue;
+        if (b === WATER && f !== 2 && nb !== AIR) continue;
+        var sl = sky(nx, ny, nz), tl = torches.length ? torch(nx, ny, nz) : 0, top = b === WATER && at(lx, y + 1, lz) !== WATER ? 0.88 : 1, p = [];
+        for (k = 0; k < 4; k++) p.push([lx + F.c[k][0], y + F.c[k][1] * top, lz + F.c[k][2]]);
+        quad(out, p, tiles[F.t], F.s, sl, tl);
       }
     }
-    var i = cz * CXN + cx, old = chunks[i];
-    if (old) { scene.remove(old); old.geometry.dispose(); }
-    var geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geo.setIndex(ind);
-    geo.computeBoundingSphere();
-    var mesh = new THREE.Mesh(geo, blockMat);
-    chunks[i] = mesh; scene.add(mesh);
+    if (c.mesh) { scene.remove(c.mesh); c.mesh.geometry.dispose(); c.mesh = null; }
+    if (c.meshT) { scene.remove(c.meshT); c.meshT.geometry.dispose(); c.meshT = null; }
+    var g1 = makeGeo(S), g2 = makeGeo(T);
+    if (g1) { c.mesh = new THREE.Mesh(g1, blockMat); c.mesh.position.set(x0, 0, z0); scene.add(c.mesh); }
+    if (g2) { c.meshT = new THREE.Mesh(g2, waterMat); c.meshT.position.set(x0, 0, z0); c.meshT.renderOrder = 2; scene.add(c.meshT); }
+    c.dirty = false;
   }
-  function buildAll() { for (var cz = 0; cz < CZN; cz++) for (var cx = 0; cx < CXN; cx++) buildChunk(cx, cz); }
+  function dropChunk(c) { if (c.mesh) { scene.remove(c.mesh); c.mesh.geometry.dispose(); } if (c.meshT) { scene.remove(c.meshT); c.meshT.geometry.dispose(); } chunks.delete(ckey(c.cx, c.cz)); if (lastChunk === c) lastChunk = null; }
+  // each frame: make the nearest missing chunk, and build the nearest picture that is out of date
+  function streamWorld(budget) {
+    var pcx = Math.floor(player.x) >> 4, pcz = Math.floor(player.z) >> 4, bestD = 1e9, bx = 0, bz = 0, dx, dz, dd, made = 0;
+    for (var n = 0; n < budget; n++) {
+      bestD = 1e9;
+      for (dz = -RENDER - 1; dz <= RENDER + 1; dz++) for (dx = -RENDER - 1; dx <= RENDER + 1; dx++) { if (chunks.has(ckey(pcx + dx, pcz + dz))) continue; dd = dx * dx + dz * dz; if (dd < bestD) { bestD = dd; bx = pcx + dx; bz = pcz + dz; } }
+      if (bestD < 1e9) { genChunk(bx, bz); made++; } else break;
+    }
+    var best = null; bestD = 1e9;
+    chunks.forEach(function (c) {
+      var ax = Math.abs(c.cx - pcx), az = Math.abs(c.cz - pcz);
+      if (ax > RENDER + 3 || az > RENDER + 3) { dropChunk(c); return; }
+      if (c.dirty && ax <= RENDER && az <= RENDER && hasNeighbours(c)) { var q = ax * ax + az * az; if (q < bestD) { bestD = q; best = c; } }
+    });
+    if (best) buildMesh(best);
+    return made || !!best;
+  }
   function setBlock(x, y, z, b) {
-    if (!inside(x, y, z)) return;
-    blocks[idx(x, y, z)] = b; edits[idx(x, y, z)] = b;
-    var cx = Math.floor(x / CH), cz = Math.floor(z / CH), lx = x - cx * CH, lz = z - cz * CH;
-    buildChunk(cx, cz);
-    if (lx === 0 && cx > 0) buildChunk(cx - 1, cz);
-    if (lx === CH - 1 && cx < CXN - 1) buildChunk(cx + 1, cz);
-    if (lz === 0 && cz > 0) buildChunk(cx, cz - 1);
-    if (lz === CH - 1 && cz < CZN - 1) buildChunk(cx, cz + 1);
+    if (y < 0 || y >= WH) return; var c = chunkAt(x >> 4, z >> 4); if (!c) return;
+    var lx = x & 15, lz = z & 15, i = (y * CS + lz) * CS + lx, old = c.data[i];
+    c.data[i] = b; var k = ckey(c.cx, c.cz); (edits[k] = edits[k] || {})[i] = b;
+    scanColumn(c, lx, lz); if (b === TORCH || old === TORCH) scanTorches(c);
+    var wide = b === TORCH || old === TORCH; // a torch shines into the chunks around it
+    for (var a = -1; a <= 1; a++) for (var e = -1; e <= 1; e++) { var n = chunks.get(ckey(c.cx + a, c.cz + e)); if (!n) continue; if (wide || (a === 0 && e === 0) || (a === -1 && lx === 0 && e === 0) || (a === 1 && lx === 15 && e === 0) || (e === -1 && lz === 0 && a === 0) || (e === 1 && lz === 15 && a === 0) || (lx < 1 || lx > 14 || lz < 1 || lz > 14)) n.dirty = true; }
+    if (hasNeighbours(c)) buildMesh(c);
     saveSoon();
   }
+  /** How light it is here, 0..1 (daylight from above, or a torch nearby). */
+  function lightAt(x, y, z) {
+    var l = y > topOf(x, z) ? dayLight : 0, cx = x >> 4, cz = z >> 4;
+    for (var a = -1; a <= 1; a++) for (var b = -1; b <= 1; b++) { var c = chunks.get(ckey(cx + a, cz + b)); if (!c) continue; for (var k = 0; k < c.torches.length; k++) { var t = c.torches[k], d = Math.abs(t[0] - x) + Math.abs(t[1] - y) + Math.abs(t[2] - z); if (d < 10) l = Math.max(l, 1 - d / 10); } }
+    return l;
+  }
 
-  /* ---------- the player: a box that falls, walks and bumps into blocks ---------- */
-  var PW = 0.3, PH = 1.8, EYE = 1.62, GRAV = 26, JUMP = 8.4, SPEED = 4.4, REACH = 6;
-  var player = { x: WX / 2 + 0.5, y: 30, z: WZ / 2 + 0.5, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: -0.25, ground: false };
-  function hits(px, py, pz) {
-    var x0 = Math.floor(px - PW), x1 = Math.floor(px + PW), y0 = Math.floor(py), y1 = Math.floor(py + PH), z0 = Math.floor(pz - PW), z1 = Math.floor(pz + PW);
+  /* =====================================================================
+     Bodies: the player and the monsters fall, walk and bump into blocks the same way
+     ===================================================================== */
+  var EYE = 1.62, GRAV = 26, JUMP = 8.4, SPEED = 4.4, REACH = 5.5;
+  var player = { x: 0.5, y: 50, z: 0.5, vx: 0, vy: 0, vz: 0, w: 0.3, h: 1.8, yaw: 0, pitch: -0.2, ground: false, hp: 20, inWater: false };
+  function hits(e, px, py, pz) {
+    var x0 = Math.floor(px - e.w), x1 = Math.floor(px + e.w), y0 = Math.floor(py), y1 = Math.floor(py + e.h), z0 = Math.floor(pz - e.w), z1 = Math.floor(pz + e.w);
     for (var y = y0; y <= y1; y++) for (var z = z0; z <= z1; z++) for (var x = x0; x <= x1; x++) if (solidAt(x, y, z)) return true;
     return false;
   }
-  function spawn() {
-    var x = Math.floor(WX / 2), z = Math.floor(WZ / 2), y = WY - 1;
-    while (y > 0 && blocks[idx(x, y, z)] === AIR) y--;
-    player.x = x + 0.5; player.z = z + 0.5; player.y = y + 1.01; player.vx = player.vy = player.vz = 0;
-  }
-  function movePlayer(dt, wishX, wishZ, wantJump) {
-    // walking speed follows the stick smoothly
-    var acc = player.ground ? 14 : 5, k = Math.min(1, acc * dt);
-    player.vx += (wishX * SPEED - player.vx) * k; player.vz += (wishZ * SPEED - player.vz) * k;
-    player.vy = Math.max(-34, player.vy - GRAV * dt);
-    if (wantJump && player.ground) { player.vy = JUMP; player.ground = false; }
-    var maxV = Math.max(Math.abs(player.vx), Math.abs(player.vy), Math.abs(player.vz));
-    var steps = Math.max(1, Math.ceil(maxV * dt / 0.35)), h = dt / steps, E = 0.001;
+  function moveBody(e, dt, wishX, wishZ, wantJump, speed) {
+    e.inWater = getBlock(Math.floor(e.x), Math.floor(e.y + 0.4), Math.floor(e.z)) === WATER;
+    var acc = e.ground || e.inWater ? 14 : 5, k = Math.min(1, acc * dt), sp = speed * (e.inWater ? 0.6 : 1), landV = 0;
+    e.vx += (wishX * sp - e.vx) * k; e.vz += (wishZ * sp - e.vz) * k;
+    if (e.inWater) { e.vy += (-3 - e.vy) * Math.min(1, 4 * dt); if (wantJump) e.vy = 3.4; }
+    else { e.vy = Math.max(-36, e.vy - GRAV * dt); if (wantJump && e.ground) { e.vy = JUMP; e.ground = false; } }
+    var maxV = Math.max(Math.abs(e.vx), Math.abs(e.vy), Math.abs(e.vz)), steps = Math.max(1, Math.ceil(maxV * dt / 0.35)), h = dt / steps, E = 0.001, bumped = false;
     for (var s = 0; s < steps; s++) {
-      var bumped = false, nx = player.x + player.vx * h;
-      if (hits(nx, player.y, player.z)) { nx = player.vx > 0 ? Math.floor(nx + PW) - PW - E : Math.floor(nx - PW) + 1 + PW + E; if (hits(nx, player.y, player.z)) nx = player.x; player.vx = 0; bumped = true; }
-      player.x = nx;
-      var nz = player.z + player.vz * h;
-      if (hits(player.x, player.y, nz)) { nz = player.vz > 0 ? Math.floor(nz + PW) - PW - E : Math.floor(nz - PW) + 1 + PW + E; if (hits(player.x, player.y, nz)) nz = player.z; player.vz = 0; bumped = true; }
-      player.z = nz;
-      var ny = player.y + player.vy * h;
-      if (hits(player.x, ny, player.z)) {
-        if (player.vy < 0) { ny = Math.floor(ny) + 1 + E; player.ground = true; } else ny = Math.floor(ny + PH) - PH - E;
-        if (hits(player.x, ny, player.z)) ny = player.y;
-        player.vy = 0;
-      } else if (player.vy !== 0) player.ground = false;
-      player.y = ny;
-      // walking into a step of one block: hop up by itself (easy on a phone)
-      if (bumped && player.ground && (wishX || wishZ)) {
-        var ax = player.x + Math.sign(wishX) * 0.2 * (Math.abs(wishX) > 0.3 ? 1 : 0), az = player.z + Math.sign(wishZ) * 0.2 * (Math.abs(wishZ) > 0.3 ? 1 : 0);
-        if (hits(ax, player.y, az) && !hits(ax, player.y + 1.05, az) && !hits(player.x, player.y + 1.05, player.z)) { player.vy = JUMP; player.ground = false; }
-      }
+      var nx = e.x + e.vx * h;
+      if (hits(e, nx, e.y, e.z)) { nx = e.vx > 0 ? Math.floor(nx + e.w) - e.w - E : Math.floor(nx - e.w) + 1 + e.w + E; if (hits(e, nx, e.y, e.z)) nx = e.x; e.vx = 0; bumped = true; }
+      e.x = nx;
+      var nz = e.z + e.vz * h;
+      if (hits(e, e.x, e.y, nz)) { nz = e.vz > 0 ? Math.floor(nz + e.w) - e.w - E : Math.floor(nz - e.w) + 1 + e.w + E; if (hits(e, e.x, e.y, nz)) nz = e.z; e.vz = 0; bumped = true; }
+      e.z = nz;
+      var ny = e.y + e.vy * h;
+      if (hits(e, e.x, ny, e.z)) {
+        if (e.vy < 0) { ny = Math.floor(ny) + 1 + E; if (!e.ground) landV = Math.min(landV, e.vy); e.ground = true; } else ny = Math.floor(ny + e.h) - e.h - E;
+        if (hits(e, e.x, ny, e.z)) ny = e.y;
+        e.vy = 0;
+      } else if (e.vy !== 0) e.ground = false;
+      e.y = ny;
     }
-    if (player.y < -20) spawn();
+    // walking into a step of one block: hop up by itself
+    if (bumped && (e.ground || e.inWater) && (wishX || wishZ)) {
+      var ax = e.x + Math.sign(wishX) * 0.25 * (Math.abs(wishX) > 0.3 ? 1 : 0), az = e.z + Math.sign(wishZ) * 0.25 * (Math.abs(wishZ) > 0.3 ? 1 : 0);
+      if (hits(e, ax, e.y, az) && !hits(e, ax, e.y + 1.05, az) && !hits(e, e.x, e.y + 1.05, e.z)) { e.vy = e.inWater ? 5 : JUMP; e.ground = false; }
+    }
+    e.bumped = bumped;
+    return landV;
   }
 
-  /* ---------- which block the crosshair points at: step through the grid along the view ---------- */
+  /* =====================================================================
+     Your things: the bag, the hotbar and what you wear
+     ===================================================================== */
+  var inv = {}, hot = [0, 0, 0, 0, 0, 0, 0, 0], selected = 0, wear = { head: 0, chest: 0, legs: 0, feet: 0 };
+  var creative = false, peaceful = false, spawnPt = [0.5, 50, 0.5];
+  function count(id) { return creative ? 99 : (inv[id] || 0); }
+  function give(id, n) {
+    if (!creative) inv[id] = (inv[id] || 0) + n;
+    if (hot.indexOf(id) < 0) { var e = hot[selected] === 0 ? selected : hot.indexOf(0); if (e >= 0) hot[e] = id; }
+    drawHotbar();
+  }
+  function take(id, n) { if (creative) return; inv[id] = (inv[id] || 0) - n; if (inv[id] <= 0) { delete inv[id]; var i = hot.indexOf(id); if (i >= 0) hot[i] = 0; } drawHotbar(); }
+  function held() { var id = hot[selected]; return id && count(id) > 0 ? id : 0; }
+  function armorPoints() { var p = 0; for (var s in wear) { var id = wear[s]; if (id) p += ARMOR_PTS[armorBase(id)][id % 10]; } return p; }
+  var hotbar = $('#hotbar');
+  function drawHotbar() {
+    for (var i = 0; i < hot.length; i++) {
+      var el = hotbar.children[i], id = hot[i], n = id ? count(id) : 0;
+      el.style.backgroundImage = id && n > 0 ? 'url(' + ICONS[id] + ')' : 'none';
+      el.firstChild.textContent = id && n > 1 && !creative ? n : '';
+      el.classList.toggle('sel', i === selected);
+    }
+    var h = '', full = Math.ceil(player.hp / 2);
+    for (var k = 0; k < 10; k++) h += '<span' + (k < full ? '' : ' class="off"') + '>♥</span>';
+    $('#hearts').innerHTML = creative ? '' : h;
+    var ap = armorPoints(); $('#armor').textContent = ap && !creative ? '🛡️' + ap : '';
+  }
+  for (var hi = 0; hi < hot.length; hi++) (function (i) {
+    var s = document.createElement('div'); s.className = 'slot'; s.appendChild(document.createElement('em')); hotbar.appendChild(s);
+    s.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); selected = i; drawHotbar(); if (held()) say(itemName(held())); if (!$('#ov').hidden && ovKind === 'bag') openBag(); });
+  })(hi);
+  function say(t) { var m = $('#msg'); m.textContent = t; m.classList.add('on'); clearTimeout(say.t); say.t = setTimeout(function () { m.classList.remove('on'); }, 1800); }
+
+  /* ---------- the bag: your things, what you wear, and everything you can make ---------- */
+  var ovKind = '', paused = false;
+  function nearStation(b) { var px = Math.floor(player.x), py = Math.floor(player.y), pz = Math.floor(player.z); for (var y = py - 3; y <= py + 4; y++) for (var z = pz - 5; z <= pz + 5; z++) for (var x = px - 5; x <= px + 5; x++) if (getBlock(x, y, z) === b) return true; return false; }
+  function canMake(r) { for (var i = 0; i < r.cost.length; i++) if (count(r.cost[i][0]) < r.cost[i][1]) return false; return true; }
+  function stationOk(r) { return creative || !r.st || nearStation(r.st === 'bench' ? BENCH : FURNACE); }
+  function craft(i) {
+    var r = RECIPES[i]; if (!r) return false;
+    if (!stationOk(r)) { say(r.st === 'bench' ? 'Stil dig ved et arbejdsbord' : 'Stil dig ved en ovn'); return false; }
+    if (!canMake(r)) { say('Du mangler noget til den'); return false; }
+    r.cost.forEach(function (c) { take(c[0], c[1]); }); give(r.out[0], r.out[1]); say('Du lavede ' + itemName(r.out[0]) + (r.out[1] > 1 ? ' ×' + r.out[1] : '')); saveSoon(); return true;
+  }
+  function closeOv() { $('#ov').hidden = true; $('#ov').innerHTML = ''; ovKind = ''; paused = false; }
+  function tap(el, fn) { el.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); }
+  function openBag() {
+    ovKind = 'bag'; paused = true; releaseAll();
+    var ov = $('#ov'), ids = creative ? Object.keys(ICONS).map(Number) : Object.keys(inv).map(Number);
+    ids.sort(function (a, b) { return a - b; });
+    var h = '<div class="panel"><h2>🎒 Taske <button class="pbtn" id="oX">✕</button></h2>';
+    h += '<h3>Det har du på</h3><div class="grid">' + ['head', 'chest', 'legs', 'feet'].map(function (s) { var id = wear[s]; return '<div class="it" data-w="' + s + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"></div>'; }).join('') + '</div>';
+    h += '<h3>Dine ting</h3><p>Tryk på en ting for at lægge den i den valgte plads forneden. Rustning tager du på, og æbler spiser du.</p><div class="grid">' + (ids.length ? ids.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"><em>' + (creative ? '' : inv[id]) + '</em></div>'; }).join('') : '') + '</div>' + (ids.length ? '' : '<p>Tasken er tom. Hak nogle klodser!</p>');
+    h += '<h3>Det kan du lave</h3>';
+    var order = RECIPES.map(function (r, i) { return i; }).sort(function (a, b) { return (canMake(RECIPES[b]) && stationOk(RECIPES[b]) ? 1 : 0) - (canMake(RECIPES[a]) && stationOk(RECIPES[a]) ? 1 : 0); });
+    h += order.map(function (i) {
+      var r = RECIPES[i], ok = canMake(r), st = stationOk(r);
+      return '<div class="rec ' + (ok && st ? 'ok' : 'no') + '" data-r="' + i + '"><div class="it" style="background-image:url(' + ICONS[r.out[0]] + ')"><em>' + (r.out[1] > 1 ? r.out[1] : '') + '</em></div><div><b>' + itemName(r.out[0]) + '</b><small>' +
+        r.cost.map(function (c) { return c[1] + ' ' + itemName(c[0]).toLowerCase(); }).join(' + ') + (r.st ? (r.st === 'bench' ? ' · ved arbejdsbord' : ' · ved ovn') : '') + '</small></div></div>';
+    }).join('');
+    ov.innerHTML = h + '</div>'; ov.hidden = false;
+    tap($('#oX'), closeOv);
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-i]'), function (el) { tap(el, function () { useFromBag(+el.dataset.i); }); });
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-w]'), function (el) { tap(el, function () { var s = el.dataset.w; if (wear[s]) { give(wear[s], 1); wear[s] = 0; drawHotbar(); openBag(); } }); });
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-r]'), function (el) { tap(el, function () { var sc = ov.firstChild.scrollTop; craft(+el.dataset.r); openBag(); $('#ov').firstChild.scrollTop = sc; }); });
+  }
+  function useFromBag(id) {
+    var ab = armorBase(id);
+    if (ab) { var s = ARMOR_SLOT[ab]; if (wear[s]) give(wear[s], 1); wear[s] = id; take(id, 1); say('Du tog ' + itemName(id) + ' på'); }
+    else if (id === APPLE && !creative && player.hp < 20) { eat(); }
+    else { var j = hot.indexOf(id); if (j >= 0) hot[j] = hot[selected]; hot[selected] = id; }
+    drawHotbar(); saveSoon(); openBag();
+  }
+  function eat() { if (count(APPLE) < 1) return; take(APPLE, 1); player.hp = Math.min(20, player.hp + 5); say('Mums! 🍎'); drawHotbar(); }
+  function openMenu() {
+    ovKind = 'menu'; paused = true; releaseAll();
+    var ov = $('#ov');
+    ov.innerHTML = '<div class="panel"><h2>⚙️ Menu <button class="pbtn" id="oX">✕</button></h2>' +
+      '<div class="row"><button class="pbtn' + (creative ? '' : ' g') + '" id="mSurv">⛏️ Overlevelse</button><button class="pbtn' + (creative ? ' g' : '') + '" id="mCrea">🎨 Kreativ</button></div>' +
+      '<p>' + (creative ? 'Kreativ: alle klodser og ting, uendeligt mange, og du kan ikke komme til skade.' : 'Overlevelse: hak klodser, byg værktøj, våben og rustning, og pas på monstrene om natten.') + '</p>' +
+      '<div class="row"><button class="pbtn" id="mMon">' + (peaceful ? '😴 Monstre: Fra' : '👾 Monstre: Til') + '</button></div>' +
+      '<p>Sådan gør du: Hak træ → lav planker → lav et arbejdsbord og stil det. Ved bordet kan du lave hakker, økser, sværd, rustning, ovn og seng. I ovnen smelter du malm til barrer med kul. Fakler holder monstre væk. Sov i sengen for at springe natten over.</p>' +
+      '<div class="row"><button class="pbtn r" id="mNew">🌍 Helt ny verden</button></div></div>';
+    ov.hidden = false;
+    tap($('#oX'), closeOv);
+    tap($('#mSurv'), function () { creative = false; drawHotbar(); saveSoon(); openMenu(); });
+    tap($('#mCrea'), function () { creative = true; drawHotbar(); saveSoon(); openMenu(); });
+    tap($('#mMon'), function () { peaceful = !peaceful; if (peaceful) clearMonsters(); saveSoon(); openMenu(); });
+    var armed = false;
+    tap($('#mNew'), function () { if (!armed) { armed = true; $('#mNew').textContent = 'Tryk igen: alt bliver slettet'; return; } try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* no storage */ } location.reload(); });
+  }
+  $('#bBag').addEventListener('click', function () { if (ovKind === 'bag') closeOv(); else openBag(); });
+  $('#bMenu').addEventListener('click', function () { if (ovKind === 'menu') closeOv(); else openMenu(); });
+
+  /* =====================================================================
+     Aiming, hacking, building, fighting
+     ===================================================================== */
   var dir = new THREE.Vector3();
-  function target() {
-    camera.getWorldDirection(dir);
-    var ox = camera.position.x, oy = camera.position.y, oz = camera.position.z;
-    var x = Math.floor(ox), y = Math.floor(oy), z = Math.floor(oz);
+  function rayBlock() {
+    var ox = camera.position.x, oy = camera.position.y, oz = camera.position.z, x = Math.floor(ox), y = Math.floor(oy), z = Math.floor(oz);
     var sx = dir.x > 0 ? 1 : -1, sy = dir.y > 0 ? 1 : -1, sz = dir.z > 0 ? 1 : -1;
     var tdx = dir.x !== 0 ? Math.abs(1 / dir.x) : Infinity, tdy = dir.y !== 0 ? Math.abs(1 / dir.y) : Infinity, tdz = dir.z !== 0 ? Math.abs(1 / dir.z) : Infinity;
     var tx = dir.x !== 0 ? (dir.x > 0 ? x + 1 - ox : ox - x) * tdx : Infinity, ty = dir.y !== 0 ? (dir.y > 0 ? y + 1 - oy : oy - y) * tdy : Infinity, tz = dir.z !== 0 ? (dir.z > 0 ? z + 1 - oz : oz - z) * tdz : Infinity;
     var nx = 0, ny = 0, nz = 0, t = 0;
     while (t <= REACH) {
-      if (getBlock(x, y, z) !== AIR) return { x: x, y: y, z: z, nx: nx, ny: ny, nz: nz };
+      var b = getBlock(x, y, z);
+      if (b !== AIR && b !== WATER) return { x: x, y: y, z: z, nx: nx, ny: ny, nz: nz, t: t, b: b };
       if (tx < ty && tx < tz) { x += sx; t = tx; tx += tdx; nx = -sx; ny = 0; nz = 0; }
       else if (ty < tz) { y += sy; t = ty; ty += tdy; nx = 0; ny = -sy; nz = 0; }
       else { z += sz; t = tz; tz += tdz; nx = 0; ny = 0; nz = -sz; }
     }
     return null;
   }
-  var marker = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.004, 1.004, 1.004)), new THREE.LineBasicMaterial({ color: 0x111111 }));
+  function rayBody(m) { // where the view line meets a monster's box (distance), or -1
+    var o = camera.position, t0 = 0, t1 = REACH, lo = [m.x - m.w, m.y, m.z - m.w], hi = [m.x + m.w, m.y + m.h, m.z + m.w], oo = [o.x, o.y, o.z], dd = [dir.x, dir.y, dir.z];
+    for (var a = 0; a < 3; a++) {
+      if (Math.abs(dd[a]) < 1e-6) { if (oo[a] < lo[a] || oo[a] > hi[a]) return -1; continue; }
+      var ta = (lo[a] - oo[a]) / dd[a], tb = (hi[a] - oo[a]) / dd[a]; if (ta > tb) { var q = ta; ta = tb; tb = q; }
+      t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); if (t0 > t1) return -1;
+    }
+    return t0;
+  }
+  var marker = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.006, 1.006, 1.006)), new THREE.LineBasicMaterial({ color: 0x111111 }));
   marker.visible = false; scene.add(marker);
-  var aim = null, selected = 0;
-
-  function say(t) { var m = document.getElementById('msg'); m.textContent = t; m.classList.add('on'); clearTimeout(say.t); say.t = setTimeout(function () { m.classList.remove('on'); }, 1400); }
+  var aim = null, aimMon = null, mining = false, mineKey = '', mineT = 0, hitCool = 0, breakCool = 0;
+  function toolInfo() { var id = held(), base = Math.floor(id / 10) * 10, t = id % 10; if (base === PICK) return { kind: 'pick', t: t }; if (base === AXE) return { kind: 'axe', t: t }; if (base === SWORD) return { kind: 'sword', t: t }; return { kind: '', t: -1 }; }
+  function breakTime(b) {
+    var def = B[b], tool = toolInfo(), sp = 1;
+    if (def.tool && tool.kind === def.tool) sp = TIER_SPEED[tool.t];
+    return def.h / sp;
+  }
+  function canHarvest(b) { var def = B[b]; if (!def.tier) return true; var tool = toolInfo(); return tool.kind === 'pick' && TIER_RANK[tool.t] >= def.tier; }
   function breakBlock() {
-    if (!aim) return;
-    if (getBlock(aim.x, aim.y, aim.z) === BEDROCK) { say('Grundfjeldet kan ikke hakkes'); return; }
-    burst(aim.x, aim.y, aim.z, getBlock(aim.x, aim.y, aim.z));
+    if (!aim) return; var b = aim.b;
+    if (b === BEDROCK) { say('Grundfjeldet kan ikke hakkes'); return; }
+    burst(aim.x, aim.y, aim.z, b);
     setBlock(aim.x, aim.y, aim.z, AIR);
+    if (!creative) {
+      var d = B[b].d || b; give(d, 1);
+      if (b === LEAVES && Math.random() < 0.15) { give(APPLE, 1); say('Et æble faldt ned! 🍎'); }
+    }
+    // a torch cannot hang in the air
+    if (getBlock(aim.x, aim.y + 1, aim.z) === TORCH) { setBlock(aim.x, aim.y + 1, aim.z, AIR); if (!creative) give(TORCH, 1); }
+    mineT = 0; mineKey = '';
   }
   function placeBlock() {
-    if (!aim) return;
-    var x = aim.x + aim.nx, y = aim.y + aim.ny, z = aim.z + aim.nz;
-    if (!inside(x, y, z) || getBlock(x, y, z) !== AIR) return;
-    if (y >= WY - 1) { say('Højere kan man ikke bygge'); return; }
-    // never build a block inside yourself
-    if (x + 1 > player.x - PW && x < player.x + PW && y + 1 > player.y && y < player.y + PH && z + 1 > player.z - PW && z < player.z + PW) return;
-    setBlock(x, y, z, HOTBAR[selected]);
+    if (paused) return;
+    if (!aim) { if (held() === APPLE && !creative) eat(); return; }
+    // using the thing you point at
+    if (aim.b === BENCH || aim.b === FURNACE) { openBag(); return; }
+    if (aim.b === BED) { sleep(); return; }
+    var id = held();
+    if (id === APPLE && !creative) { eat(); return; }
+    if (!id || !B[id]) { if (id) say(itemName(id) + ' kan ikke stilles'); return; }
+    var x = aim.x + aim.nx, y = aim.y + aim.ny, z = aim.z + aim.nz, cur = getBlock(x, y, z);
+    if (y < 1 || y >= WH - 1 || (cur !== AIR && cur !== WATER)) return;
+    if (id === TORCH) { if (!SOLID[getBlock(x, y - 1, z)]) { say('En fakkel skal stå på en klods'); return; } }
+    else if (x + 1 > player.x - player.w && x < player.x + player.w && y + 1 > player.y && y < player.y + player.h && z + 1 > player.z - player.w && z < player.z + player.w) return;
+    setBlock(x, y, z, id); take(id, 1);
+    if (id === BED) { spawnPt = [x + 0.5, y + 1.05, z + 0.5]; say('Her er dit hjem nu 🛏️'); }
+  }
+  function sleep() {
+    if (aim) spawnPt = [aim.x + 0.5, aim.y + 1.05, aim.z + 0.5];
+    if (sunUp > 0.1) { say('Du kan kun sove om natten 🌙'); return; }
+    dayT = 0.02; clearMonsters(); player.hp = 20; drawHotbar(); say('Godmorgen! ☀️'); saveSoon();
+  }
+  function hurt(d, fromX, fromZ) {
+    if (creative || d <= 0) return;
+    d *= 1 - Math.min(0.8, armorPoints() * 0.04);
+    player.hp -= d; regenT = 6; $('#hurt').style.opacity = 1; setTimeout(function () { $('#hurt').style.opacity = 0; }, 180);
+    if (fromX != null) { var dx = player.x - fromX, dz = player.z - fromZ, l = Math.hypot(dx, dz) || 1; player.vx += dx / l * 7; player.vz += dz / l * 7; player.vy = Math.max(player.vy, 4); }
+    if (player.hp <= 0) { player.hp = 20; player.x = spawnPt[0]; player.y = spawnPt[1]; player.z = spawnPt[2]; player.vx = player.vy = player.vz = 0; clearMonsters(); say('Av! Du vågner derhjemme igen. Dine ting har du stadig.'); }
+    drawHotbar();
   }
 
-  /* ---------- little crumbs that fly when a block breaks ---------- */
+  /* ---------- crumbs that fly when a block breaks ---------- */
   var CRUMBS = 60, crumbPos = new Float32Array(CRUMBS * 3), crumbVel = new Float32Array(CRUMBS * 3), crumbLife = new Float32Array(CRUMBS), crumbNext = 0;
   var crumbGeo = new THREE.BufferGeometry(); crumbGeo.setAttribute('position', new THREE.BufferAttribute(crumbPos, 3));
   var crumbMat = new THREE.PointsMaterial({ size: 0.14, color: 0xffffff });
   var crumbs = new THREE.Points(crumbGeo, crumbMat); crumbs.frustumCulled = false; scene.add(crumbs);
-  var CRUMB_COL = {}; CRUMB_COL[GRASS] = 0x60aa46; CRUMB_COL[DIRT] = 0x866042; CRUMB_COL[STONE] = 0x808084; CRUMB_COL[WOOD] = 0x705434; CRUMB_COL[LEAVES] = 0x3a8434; CRUMB_COL[SAND] = 0xded09a;
+  var CRUMB_COL = {}; CRUMB_COL[GRASS] = 0x60aa46; CRUMB_COL[DIRT] = 0x866042; CRUMB_COL[LOG] = 0x705434; CRUMB_COL[PLANKS] = 0xb08854; CRUMB_COL[LEAVES] = 0x3a8434; CRUMB_COL[SAND] = 0xded09a; CRUMB_COL[SNOW] = 0xf0f4fa;
   for (var ci = 0; ci < CRUMBS; ci++) crumbPos[ci * 3 + 1] = -99;
-  function burst(x, y, z, b) {
-    crumbMat.color.setHex(CRUMB_COL[b] || 0xffffff);
+  function burst(x, y, z, b, col) {
+    crumbMat.color.setHex(col || CRUMB_COL[b] || 0x808084);
     for (var k = 0; k < 12; k++) {
       var i = crumbNext; crumbNext = (crumbNext + 1) % CRUMBS;
       crumbPos[i * 3] = x + Math.random(); crumbPos[i * 3 + 1] = y + Math.random(); crumbPos[i * 3 + 2] = z + Math.random();
-      crumbVel[i * 3] = (Math.random() - 0.5) * 3; crumbVel[i * 3 + 1] = Math.random() * 4; crumbVel[i * 3 + 2] = (Math.random() - 0.5) * 3;
-      crumbLife[i] = 0.6;
+      crumbVel[i * 3] = (Math.random() - 0.5) * 3; crumbVel[i * 3 + 1] = Math.random() * 4; crumbVel[i * 3 + 2] = (Math.random() - 0.5) * 3; crumbLife[i] = 0.6;
     }
   }
   function updateCrumbs(dt) {
@@ -346,19 +616,90 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     crumbGeo.attributes.position.needsUpdate = true;
   }
 
-  /* ---------- the hotbar: tap a block to choose it ---------- */
-  var hotbar = document.getElementById('hotbar');
-  function select(i) { selected = i; var s = hotbar.children; for (var k = 0; k < s.length; k++) s[k].classList.toggle('sel', k === i); say(NAMES[HOTBAR[i]]); saveSoon(); }
-  HOTBAR.forEach(function (b, i) {
-    var slot = document.createElement('div'); slot.className = 'slot';
-    var c = document.createElement('canvas'); c.width = c.height = TILE;
-    c.getContext('2d').drawImage(atlasCanvas, FACE_TILE[b][b === GRASS ? 2 : (b === WOOD ? 2 : 0)] * TILE, 0, TILE, TILE, 0, 0, TILE, TILE);
-    slot.appendChild(c); hotbar.appendChild(slot);
-    slot.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); select(i); });
-  });
+  /* =====================================================================
+     Monsters: they come at night and in dark places, and they do not like light
+     ===================================================================== */
+  var KINDS = {
+    slim: { n: 'Slimklat', hp: 6, dmg: 2, sp: 2.2, w: 0.4, h: 0.8, col: 0x58c850, hop: true, drop: [[APPLE, 1]] },
+    skygge: { n: 'Skyggevandrer', hp: 14, dmg: 3, sp: 2.7, w: 0.3, h: 1.9, col: 0x4a3a78, drop: [[COAL, 2], [IRON, 1]] },
+    kravl: { n: 'Hulekravler', hp: 8, dmg: 2, sp: 3.5, w: 0.45, h: 0.6, col: 0x8a5a36, drop: [[COAL, 1], [STICK, 2]] }
+  };
+  var monsters = [], spawnT = 0, MAX_MON = 8;
+  function box(g, w, h, d, x, y, z, col, glow) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: col })); m.position.set(x, y, z); m.userData.base = new THREE.Color(col); m.userData.glow = !!glow; g.add(m); return m; }
+  function buildMonster(kind) {
+    var g = new THREE.Group(), K = KINDS[kind], c = K.col;
+    if (kind === 'slim') { box(g, 0.8, 0.7, 0.8, 0, 0.35, 0, c); box(g, 0.5, 0.12, 0.5, 0, 0.76, 0, 0x8ae880); box(g, 0.14, 0.14, 0.05, -0.18, 0.45, 0.41, 0x10301a, true); box(g, 0.14, 0.14, 0.05, 0.18, 0.45, 0.41, 0x10301a, true); }
+    else if (kind === 'skygge') {
+      g.userData.legs = [box(g, 0.2, 0.8, 0.2, -0.13, 0.4, 0, 0x2a2048), box(g, 0.2, 0.8, 0.2, 0.13, 0.4, 0, 0x2a2048)];
+      box(g, 0.56, 0.7, 0.3, 0, 1.15, 0, c); g.userData.arms = [box(g, 0.16, 0.8, 0.16, -0.38, 1.1, 0, c), box(g, 0.16, 0.8, 0.16, 0.38, 1.1, 0, c)];
+      box(g, 0.44, 0.4, 0.4, 0, 1.7, 0, 0x3a2c60); box(g, 0.1, 0.07, 0.05, -0.1, 1.74, 0.21, 0xffe060, true); box(g, 0.1, 0.07, 0.05, 0.1, 1.74, 0.21, 0xffe060, true);
+    } else {
+      box(g, 0.8, 0.3, 0.9, 0, 0.32, 0, c); box(g, 0.5, 0.26, 0.3, 0, 0.36, 0.55, 0x6a4226);
+      g.userData.legs = []; for (var i = 0; i < 6; i++) g.userData.legs.push(box(g, 0.34, 0.08, 0.08, (i % 2 ? 0.55 : -0.55), 0.2, -0.3 + Math.floor(i / 2) * 0.3, 0x4a2e1a));
+      box(g, 0.08, 0.08, 0.05, -0.12, 0.42, 0.71, 0xff4040, true); box(g, 0.08, 0.08, 0.05, 0.12, 0.42, 0.71, 0xff4040, true);
+    }
+    return g;
+  }
+  function spawnMonster(kind, x, y, z) {
+    var K = KINDS[kind], m = { kind: kind, x: x, y: y, z: z, vx: 0, vy: 0, vz: 0, w: K.w, h: K.h, hp: K.hp, ground: false, cool: 0, hopT: 0, flash: 0, t: Math.random() * 9, wander: Math.random() * 6.28, mesh: buildMonster(kind) };
+    scene.add(m.mesh); monsters.push(m); return m;
+  }
+  function removeMonster(m) { scene.remove(m.mesh); m.mesh.traverse(function (o) { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } }); monsters.splice(monsters.indexOf(m), 1); if (aimMon === m) aimMon = null; }
+  function clearMonsters() { while (monsters.length) removeMonster(monsters[0]); }
+  function trySpawn() {
+    var a = Math.random() * 6.28, d = 12 + Math.random() * 14, x = Math.floor(player.x + Math.cos(a) * d), z = Math.floor(player.z + Math.sin(a) * d);
+    if (!chunkAt(x >> 4, z >> 4)) return;
+    var y, cave = Math.random() < 0.5 || sunUp > 0.1;
+    if (cave) { // a dark spot under ground near your height
+      var y0 = Math.max(2, Math.min(topOf(x, z) - 3, Math.floor(player.y) + 8));
+      for (y = y0; y > Math.max(1, y0 - 22); y--) if (getBlock(x, y, z) === AIR && getBlock(x, y + 1, z) === AIR && SOLID[getBlock(x, y - 1, z)]) break;
+      if (y <= Math.max(1, y0 - 22)) return;
+    } else { y = topOf(x, z) + 1; if (getBlock(x, y - 1, z) === WATER || getBlock(x, y, z) !== AIR) return; }
+    if (lightAt(x, y, z) > 0.28) return;
+    spawnMonster(cave ? (Math.random() < 0.6 ? 'kravl' : 'skygge') : (Math.random() < 0.5 ? 'slim' : 'skygge'), x + 0.5, y + 0.02, z + 0.5);
+  }
+  function hitMonster(m) {
+    var tool = toolInfo(), dmg = tool.kind === 'sword' ? SWORD_DMG[tool.t] : tool.kind === 'axe' ? 3 : tool.kind === 'pick' ? 2 : 1;
+    if (creative) dmg = 99;
+    m.hp -= dmg; m.flash = 0.2; var dx = m.x - player.x, dz = m.z - player.z, l = Math.hypot(dx, dz) || 1; m.vx = dx / l * 7; m.vz = dz / l * 7; m.vy = 4.5; m.ground = false;
+    burst(m.x - 0.5, m.y, m.z - 0.5, 0, KINDS[m.kind].col);
+    if (m.hp <= 0) {
+      var K = KINDS[m.kind], d = K.drop[Math.floor(Math.random() * K.drop.length)];
+      if (!creative) { give(d[0], d[1]); say(K.n + ' er væk! Du fik ' + d[1] + ' ' + itemName(d[0]).toLowerCase()); }
+      removeMonster(m);
+    }
+  }
+  function updateMonsters(dt) {
+    if (!peaceful && !creative && (spawnT -= dt) <= 0) { spawnT = 1.6; if (monsters.length < MAX_MON) trySpawn(); }
+    for (var i = monsters.length - 1; i >= 0; i--) {
+      var m = monsters[i], K = KINDS[m.kind], dx = player.x - m.x, dz = player.z - m.z, dist = Math.hypot(dx, dz), dy = player.y - m.y;
+      if (dist > 60 || m.y < -10 || !chunkAt(Math.floor(m.x) >> 4, Math.floor(m.z) >> 4)) { removeMonster(m); continue; }
+      m.t += dt; m.cool -= dt; m.flash -= dt;
+      var lit = lightAt(Math.floor(m.x), Math.floor(m.y + 0.5), Math.floor(m.z));
+      // daylight makes them wither away
+      if (sunUp > 0.35 && Math.floor(m.y + 0.5) > topOf(Math.floor(m.x), Math.floor(m.z))) { m.hp -= dt * 4; if (m.hp <= 0) { burst(m.x - 0.5, m.y, m.z - 0.5, 0, 0xffffff); removeMonster(m); continue; } }
+      var wx = 0, wz = 0, chase = dist < 22 && !creative;
+      if (chase) { if (dist > m.w + player.w + 0.25) { wx = dx / dist; wz = dz / dist; } m.wander = Math.atan2(dx, dz); } // stops in front of you, never inside you else { if (Math.random() < dt * 0.4) m.wander = Math.random() * 6.28; wx = Math.sin(m.wander) * 0.4; wz = Math.cos(m.wander) * 0.4; }
+      var jump = false;
+      if (K.hop) { m.hopT -= dt; if (m.ground) { if (m.hopT <= 0) { jump = true; m.hopT = 0.9; } else { wx = 0; wz = 0; } } }
+      else if (m.bumped && m.ground) jump = true;
+      moveBody(m, dt, wx, wz, jump, K.sp);
+      if (chase && dist < m.w + player.w + 0.35 && dy > -m.h - 0.2 && dy < m.h + 0.4 && m.cool <= 0) { m.cool = 1.1; hurt(K.dmg, m.x, m.z); }
+      m.mesh.position.set(m.x, m.y, m.z);
+      m.mesh.rotation.y = chase ? Math.atan2(dx, dz) : (Math.abs(wx) + Math.abs(wz) > 0.01 ? Math.atan2(wx, wz) : m.mesh.rotation.y);
+      var sw = Math.sin(m.t * 9) * (Math.hypot(m.vx, m.vz) > 0.3 ? 0.7 : 0), ud = m.mesh.userData;
+      if (m.kind === 'skygge') { ud.legs[0].rotation.x = sw; ud.legs[1].rotation.x = -sw; ud.arms[0].rotation.x = -1.2 + sw * 0.3; ud.arms[1].rotation.x = -1.2 - sw * 0.3; }
+      else if (m.kind === 'kravl') for (var q = 0; q < 6; q++) ud.legs[q].rotation.y = Math.sin(m.t * 14 + q) * 0.5;
+      else m.mesh.scale.y = m.ground ? 0.85 + Math.sin(m.t * 5) * 0.06 : 1.15;
+      var l = 0.25 + 0.75 * Math.max(lit, 0.0), red = m.flash > 0;
+      m.mesh.traverse(function (o) { if (o.isMesh) { if (red) o.material.color.setRGB(1, 0.3, 0.3); else if (o.userData.glow) o.material.color.copy(o.userData.base); else o.material.color.copy(o.userData.base).multiplyScalar(l); } });
+    }
+  }
 
-  /* ---------- touch: left thumb walks, a finger anywhere else looks, three buttons ---------- */
-  var stick = document.getElementById('stick'), knob = document.getElementById('knob');
+  /* =====================================================================
+     Touch: left thumb walks, a finger elsewhere looks, three buttons
+     ===================================================================== */
+  var stick = $('#stick'), knob = $('#knob');
   var move = { id: null, x: 0, y: 0 }, look = { id: null, x: 0, y: 0 }, jumpHeld = false, keys = {};
   function stickFrom(e) {
     var r = stick.getBoundingClientRect(), R = r.width / 2, dx = e.clientX - (r.left + R), dy = e.clientY - (r.top + R), l = Math.hypot(dx, dy), m = R - 20;
@@ -366,97 +707,130 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     move.x = dx / m; move.y = dy / m; knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
   }
   function capture(el, e) { try { el.setPointerCapture(e.pointerId); } catch (er) { /* not a capturable pointer */ } }
+  function releaseAll() { move.id = null; move.x = move.y = 0; knob.style.transform = ''; look.id = null; jumpHeld = false; mining = false; }
   stick.addEventListener('pointerdown', function (e) { e.preventDefault(); if (move.id !== null) return; move.id = e.pointerId; capture(stick, e); stickFrom(e); });
   stick.addEventListener('pointermove', function (e) { if (e.pointerId === move.id) stickFrom(e); });
   function stickEnd(e) { if (e.pointerId !== move.id) return; move.id = null; move.x = move.y = 0; knob.style.transform = ''; }
   stick.addEventListener('pointerup', stickEnd); stick.addEventListener('pointercancel', stickEnd);
-
   canvas.addEventListener('pointerdown', function (e) { e.preventDefault(); if (look.id !== null) return; look.id = e.pointerId; look.x = e.clientX; look.y = e.clientY; capture(canvas, e); });
   canvas.addEventListener('pointermove', function (e) {
-    if (e.pointerId !== look.id) return;
-    var k = 0.0052;
+    if (e.pointerId !== look.id) return; var k = 0.0052;
     player.yaw -= (e.clientX - look.x) * k; player.pitch = Math.max(-1.55, Math.min(1.55, player.pitch - (e.clientY - look.y) * k));
     look.x = e.clientX; look.y = e.clientY;
   });
   function lookEnd(e) { if (e.pointerId === look.id) look.id = null; }
   canvas.addEventListener('pointerup', lookEnd); canvas.addEventListener('pointercancel', lookEnd);
-
-  // a button: acts at once, and keeps acting while you hold it
-  function button(id, down, repeatMs, up) {
-    var el = document.getElementById(id), timer = 0, pid = null;
-    el.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); e.stopPropagation(); if (pid !== null) return; pid = e.pointerId; capture(el, e); el.classList.add('on');
-      down(); if (repeatMs) timer = setInterval(down, repeatMs);
-    });
+  function button(id, down, up, repeatMs) {
+    var el = $(id), pid = null, timer = 0;
+    el.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); if (pid !== null) return; pid = e.pointerId; capture(el, e); el.classList.add('on'); down(); if (repeatMs) timer = setInterval(down, repeatMs); });
     function end(e) { if (e.pointerId !== pid) return; pid = null; el.classList.remove('on'); clearInterval(timer); if (up) up(); }
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
   }
-  button('bJump', function () { jumpHeld = true; }, 0, function () { jumpHeld = false; });
-  button('bBreak', breakBlock, 260);
-  button('bPlace', placeBlock, 260);
-  var armed = 0;
-  document.getElementById('bNew').addEventListener('pointerdown', function (e) {
-    e.preventDefault(); e.stopPropagation();
-    if (Date.now() - armed > 3000) { armed = Date.now(); say('Tryk igen for en helt ny verden'); return; }
-    armed = 0; seed = Math.floor(Math.random() * 100000); edits = {}; generate(); buildAll(); spawn(); saveSoon(); say('En ny verden!');
-  });
-
-  // a keyboard and a mouse work too (for trying it on a computer): WASD, space, Q hak, E byg, 1-6
+  button('#bJump', function () { jumpHeld = true; }, function () { jumpHeld = false; });
+  button('#bBreak', function () { mining = true; hitCool = 0; breakCool = 0; }, function () { mining = false; mineT = 0; });
+  button('#bPlace', placeBlock, null, 280);
   addEventListener('keydown', function (e) {
     keys[e.code] = true;
-    if (e.code === 'KeyQ') breakBlock(); if (e.code === 'KeyE') placeBlock();
-    if (e.code.indexOf('Digit') === 0) { var n = +e.code.slice(5) - 1; if (n >= 0 && n < HOTBAR.length) select(n); }
+    if (e.code === 'KeyQ') mining = true; if (e.code === 'KeyE') placeBlock(); if (e.code === 'KeyB') { if (ovKind) closeOv(); else openBag(); }
+    if (e.code.indexOf('Digit') === 0) { var n = +e.code.slice(5) - 1; if (n >= 0 && n < hot.length) { selected = n; drawHotbar(); } }
   });
-  addEventListener('keyup', function (e) { keys[e.code] = false; });
-
-  // no zooming, scrolling, pull-to-refresh or long-press menus
+  addEventListener('keyup', function (e) { keys[e.code] = false; if (e.code === 'KeyQ') { mining = false; mineT = 0; } });
   ['gesturestart', 'gesturechange', 'gestureend', 'contextmenu', 'dblclick'].forEach(function (n) { document.addEventListener(n, function (e) { e.preventDefault(); }, { passive: false }); });
-  document.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
-
-  /* ---------- size: portrait and landscape ---------- */
-  function resize() {
-    var w = window.innerWidth, h = window.innerHeight;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h; camera.fov = w < h ? 78 : 68; camera.updateProjectionMatrix();
-  }
+  document.addEventListener('touchmove', function (e) { if (!(e.target.closest && e.target.closest('.panel'))) e.preventDefault(); }, { passive: false });
+  function resize() { var w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 78 : 68; camera.updateProjectionMatrix(); }
   addEventListener('resize', resize); addEventListener('orientationchange', function () { setTimeout(resize, 200); });
 
-  /* ---------- start ---------- */
-  var saved = loadSave();
-  generate();
-  for (var key in edits) { var ei = +key; if (ei >= 0 && ei < blocks.length) blocks[ei] = edits[key]; }
-  buildAll();
-  spawn();
-  if (saved && saved.p && saved.p.length === 5 && !hits(saved.p[0], saved.p[1], saved.p[2])) { player.x = saved.p[0]; player.y = saved.p[1]; player.z = saved.p[2]; player.yaw = saved.p[3]; player.pitch = saved.p[4]; }
-  select(saved && saved.sel >= 0 && saved.sel < HOTBAR.length ? saved.sel : 0);
-  document.getElementById('msg').classList.remove('on');
-  resize();
-  document.getElementById('load').remove();
+  /* =====================================================================
+     Day and night
+     ===================================================================== */
+  var DAY_LEN = 600, dayT = 0.04, dayLight = 1, sunUp = 1;
+  var C_DAY = new THREE.Color(0x7ec0ee), C_DUSK = new THREE.Color(0xf09a60), C_NIGHT = new THREE.Color(0x0a1024);
+  function updateSky(dt) {
+    dayT = (dayT + dt / DAY_LEN) % 1;
+    var a = dayT * Math.PI * 2, sh = Math.sin(a);
+    sunUp = Math.max(0, Math.min(1, (sh + 0.12) / 0.4)); sunUp = sunUp * sunUp * (3 - 2 * sunUp);
+    dayLight = 0.2 + 0.8 * sunUp; U.uDay.value = dayLight;
+    var dusk = Math.max(0, 1 - Math.abs(sh) / 0.3) * 0.6;
+    skyCol.copy(C_NIGHT).lerp(C_DAY, sunUp).lerp(C_DUSK, dusk * (0.3 + 0.7 * sunUp));
+    scene.fog.color.copy(skyCol);
+    var p = camera.position;
+    sun.position.set(p.x + Math.cos(a) * 100, p.y + sh * 100, p.z + 30); sun.lookAt(p); sun.visible = sh > -0.15;
+    moon.position.set(p.x - Math.cos(a) * 100, p.y - sh * 100, p.z - 30); moon.lookAt(p); moon.visible = sh < 0.15;
+    $('#clock').textContent = sunUp > 0.5 ? '☀️' : (sunUp > 0.05 ? '🌅' : '🌙');
+  }
 
-  var last = performance.now(), saveClock = 0;
+  /* =====================================================================
+     Saving
+     ===================================================================== */
+  var saveTimer = 0;
+  function saveNow() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ seed: seed, edits: edits, p: [player.x, player.y, player.z, player.yaw, player.pitch], hp: player.hp, inv: inv, hot: hot, sel: selected, wear: wear, day: dayT, cr: creative, pe: peaceful, sp: spawnPt })); } catch (e) { /* storage full or off */ } }
+  function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 700); }
+  addEventListener('visibilitychange', function () { if (document.hidden) saveNow(); }); addEventListener('pagehide', saveNow);
+
+  /* =====================================================================
+     Start
+     ===================================================================== */
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { saved = null; }
+  if (saved && typeof saved.seed === 'number') {
+    seed = saved.seed; edits = saved.edits || {}; inv = saved.inv || {}; if (saved.hot && saved.hot.length === hot.length) hot = saved.hot; selected = saved.sel || 0; if (saved.wear) wear = saved.wear;
+    dayT = saved.day || 0.04; creative = !!saved.cr; peaceful = !!saved.pe; player.hp = saved.hp || 20;
+  } else { saved = null; seed = Math.floor(Math.random() * 1e9); }
+  // a good place to start: dry land near the middle
+  function findStart() { for (var r = 0; r < 400; r += 3) for (var a = 0; a < 8; a++) { var x = Math.round(Math.cos(a * 0.785) * r), z = Math.round(Math.sin(a * 0.785) * r), h = colHeight(x, z); if (h > SEA + 1 && h < 44 && !isCave(x, h, z, h) && !isTree(x, z, h)) return [x + 0.5, h + 1.05, z + 0.5]; } return [0.5, 50, 0.5]; }
+  if (saved && saved.p) { player.x = saved.p[0]; player.y = saved.p[1]; player.z = saved.p[2]; player.yaw = saved.p[3]; player.pitch = saved.p[4]; spawnPt = saved.sp || findStart(); }
+  else { spawnPt = findStart(); player.x = spawnPt[0]; player.y = spawnPt[1]; player.z = spawnPt[2]; inv[TORCH] = 4; inv[APPLE] = 3; hot[0] = TORCH; hot[1] = APPLE; }
+  // build the ground you stand on before the first picture
+  (function () { var pcx = Math.floor(player.x) >> 4, pcz = Math.floor(player.z) >> 4, x, z; for (z = -2; z <= 2; z++) for (x = -2; x <= 2; x++) genChunk(pcx + x, pcz + z); for (z = -1; z <= 1; z++) for (x = -1; x <= 1; x++) buildMesh(chunks.get(ckey(pcx + x, pcz + z))); })();
+  if (hits(player, player.x, player.y, player.z)) { player.y = topOf(Math.floor(player.x), Math.floor(player.z)) + 1.05; }
+  drawHotbar(); resize(); $('#load').remove();
+  if (!saved) setTimeout(function () { say('Hak et træ, og åbn 🎒 for at lave ting'); }, 800);
+
+  var last = performance.now(), saveClock = 0, regenT = 0, fallV = 0;
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000); last = now;
-    // the stick (or the keys) say where to walk, turned to the way you look
-    var mx = move.x, my = move.y;
-    if (keys.KeyW || keys.ArrowUp) my = -1; if (keys.KeyS || keys.ArrowDown) my = 1; if (keys.KeyA || keys.ArrowLeft) mx = -1; if (keys.KeyD || keys.ArrowRight) mx = 1;
-    var l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; } if (l < 0.12) { mx = 0; my = 0; }
-    var sn = Math.sin(player.yaw), cs = Math.cos(player.yaw);
-    var wishX = mx * cs + my * sn, wishZ = -mx * sn + my * cs;
-    movePlayer(dt, wishX, wishZ, jumpHeld || keys.Space);
-    camera.position.set(player.x, player.y + EYE, player.z);
-    camera.rotation.set(player.pitch, player.yaw, 0);
-    camera.updateMatrixWorld();
-    aim = target();
-    if (aim) { marker.visible = true; marker.position.set(aim.x + 0.5, aim.y + 0.5, aim.z + 0.5); } else marker.visible = false;
+    streamWorld(1);
+    if (!paused) {
+      var mx = move.x, my = move.y;
+      if (keys.KeyW || keys.ArrowUp) my = -1; if (keys.KeyS || keys.ArrowDown) my = 1; if (keys.KeyA || keys.ArrowLeft) mx = -1; if (keys.KeyD || keys.ArrowRight) mx = 1;
+      var l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; } if (l < 0.12) { mx = 0; my = 0; }
+      var sn = Math.sin(player.yaw), cs = Math.cos(player.yaw);
+      fallV = moveBody(player, dt, mx * cs + my * sn, -mx * sn + my * cs, jumpHeld || keys.Space, SPEED);
+      if (fallV < -15 && !player.inWater) hurt((-fallV - 13) * 0.9);
+      if (player.y < -20) { player.x = spawnPt[0]; player.y = spawnPt[1]; player.z = spawnPt[2]; player.vy = 0; }
+      if ((regenT -= dt) <= 0 && player.hp < 20 && !creative) { regenT = 4; player.hp = Math.min(20, player.hp + 1); drawHotbar(); }
+      updateSky(dt); updateMonsters(dt);
+    }
+    camera.position.set(player.x, player.y + EYE, player.z); camera.rotation.set(player.pitch, player.yaw, 0); camera.updateMatrixWorld();
+    $('#tint').style.opacity = getBlock(Math.floor(player.x), Math.floor(player.y + EYE), Math.floor(player.z)) === WATER ? 0.45 : 0;
+    camera.getWorldDirection(dir);
+    aim = rayBlock(); aimMon = null;
+    var bestT = aim ? aim.t : REACH - 1;
+    for (var i = 0; i < monsters.length; i++) { var t = rayBody(monsters[i]); if (t >= 0 && t < Math.min(bestT, 4.2)) { bestT = t; aimMon = monsters[i]; } }
+    if (aim && !aimMon) { marker.visible = true; marker.position.set(aim.x + 0.5, aim.y + 0.5, aim.z + 0.5); } else marker.visible = false;
+    // holding Hak: hit the monster you look at, or hack on the block until it breaks
+    var progress = 0; hitCool -= dt; breakCool -= dt;
+    if (mining && !paused) {
+      if (aimMon) { if (hitCool <= 0) { hitCool = 0.4; hitMonster(aimMon); } mineT = 0; }
+      else if (aim) {
+        if (creative) { if (breakCool <= 0) { breakCool = 0.22; breakBlock(); } }
+        else if (aim.b === BEDROCK) { if (breakCool <= 0) { breakCool = 1.5; say('Grundfjeldet kan ikke hakkes'); } }
+        else if (!canHarvest(aim.b)) { if (breakCool <= 0) { breakCool = 1.5; say('Du skal bruge en bedre hakke til ' + B[aim.b].n.toLowerCase()); } }
+        else { var key = aim.x + ',' + aim.y + ',' + aim.z; if (key !== mineKey) { mineKey = key; mineT = 0; } mineT += dt; var need = breakTime(aim.b); progress = Math.min(1, mineT / need); if (mineT >= need) { breakBlock(); progress = 0; } }
+      } else mineT = 0;
+    }
+    $('#prog').style.display = progress > 0 ? 'block' : 'none'; if (progress > 0) $('#prog').firstChild.style.width = Math.round(progress * 100) + '%';
     updateCrumbs(dt);
     renderer.render(scene, camera);
-    if ((saveClock += dt) > 5) { saveClock = 0; saveSoon(); }
+    if ((saveClock += dt) > 8) { saveClock = 0; saveSoon(); }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
   // for automated checks
-  window.__KLODS__ = { player: player, getBlock: getBlock, target: function () { return aim; }, breakBlock: breakBlock, placeBlock: placeBlock, select: select, hits: hits };
+  window.__KLODS__ = { player: player, getBlock: getBlock, setBlock: setBlock, target: function () { return aim; }, hits: function (x, y, z) { return hits(player, x, y, z); }, give: give, count: count, craft: craft, RECIPES: RECIPES,
+    spawnMonster: spawnMonster, monsters: monsters, setDay: function (t) { dayT = t; }, light: function () { return dayLight; }, lightAt: lightAt, chunks: chunks, hot: hot, wear: wear, useFromBag: useFromBag, hurt: hurt, armorPoints: armorPoints, save: saveNow,
+    ids: { LOG: LOG, PLANKS: PLANKS, STICK: STICK, BENCH: BENCH, TORCH: TORCH, COBBLE: COBBLE, IRON: IRON, PICK: PICK, SWORD: SWORD, HELM: HELM, CHEST: CHEST, DIRT: DIRT }, setMode: function (c, p) { creative = c; peaceful = p; drawHotbar(); } };
 })();
 </script>
 </body>
