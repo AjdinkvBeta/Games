@@ -58,6 +58,25 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 .rec div{flex:1;min-width:0}.rec b{display:block;font:700 14px system-ui,sans-serif}.rec small{font:500 12px system-ui,sans-serif;color:#bbc}
 .rec.no{opacity:.5}
 .row{display:flex;gap:8px;flex-wrap:wrap}.row .pbtn{flex:1;background:#4a5068}.pbtn.g{background:#3a9a4a}.pbtn.r{background:#b8483a}
+#hotwrap{bottom:calc(env(safe-area-inset-bottom) + 6px)!important}
+#stick{bottom:calc(env(safe-area-inset-bottom) + 76px)!important;width:118px!important;height:118px!important;background:#ffffff1a;border-color:#ffffff66}
+#btns{bottom:calc(env(safe-area-inset-bottom) + 72px);width:160px;height:160px}
+.act{width:74px;height:74px;background:#ffffff24}#bBreak{right:84px}#bPlace{bottom:84px}
+.slot{width:min(42px,10.3vw)!important;height:min(42px,10.3vw)!important}
+#ov{padding-bottom:calc(env(safe-area-inset-bottom) + 70px)!important}
+#top button{width:46px;height:46px;padding:0;font-size:22px;border-radius:12px}
+#mis{position:fixed;left:calc(env(safe-area-inset-left) + 10px);top:calc(env(safe-area-inset-top) + 64px);max-width:min(74vw,330px);z-index:6;background:#000000a0;border-radius:12px;padding:7px 10px;color:#fff;font:600 13px/1.3 system-ui,sans-serif;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+#mis[hidden]{display:none}#mis b{font-size:14px}#mis small{font:500 12.5px/1.3 system-ui,sans-serif;color:#ffe9a0}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:#ffffff22;border:2px solid #ffffff40;border-radius:8px;padding:2px 6px 2px 3px;font:700 13px system-ui,sans-serif}
+.chip img{width:22px;height:22px;image-rendering:pixelated}.chip.ok{border-color:#5ad06a;background:#5ad06a44}.chip.sub{opacity:.85;border-style:dashed}
+.arr{display:inline-block;font-style:normal;font-size:16px;color:#ffe060}
+.hint{animation:hint 0.9s ease-in-out infinite;outline:4px solid #ffd24a;outline-offset:2px;position:relative;z-index:11}
+.act.hint,.slot.hint,#top .hint{box-shadow:0 0 0 6px #ffd24a66,0 0 24px 8px #ffd24a}
+@keyframes hint{50%{outline-color:#fff;transform:scale(1.08)}}
+.me{display:flex;gap:10px;align-items:center}.me img{width:92px;image-rendering:pixelated;background:#0004;border-radius:10px;padding:4px}.me .grid{flex:1;grid-template-columns:repeat(2,minmax(46px,64px))}
+.mapw{position:relative;border-radius:10px;overflow:hidden;border:2px solid #0008}.mapw img{display:block;width:100%;image-rendering:pixelated}
+.mk{position:absolute;transform:translate(-50%,-50%);font-style:normal;font-size:22px;text-shadow:0 0 3px #000,0 0 3px #000}.mk.me{color:#fff;font-size:20px}.mk.far{opacity:.75;font-size:16px}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:#7ec0ee;color:#fff;font:700 22px system-ui,sans-serif;z-index:20;text-align:center;padding:20px}
 </style>
 </head>
@@ -65,7 +84,8 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 <canvas id="game"></canvas>
 <div id="tint"></div><div id="hurt"></div>
 <div id="cross"></div><div id="prog"><i></i></div>
-<div id="top"><button id="bBag">🎒 Taske</button><button id="bMenu">⚙️</button></div>
+<div id="top"><button id="bBag" aria-label="taske">🎒</button><button id="bMap" aria-label="kort">🗺️</button><button id="bMenu" aria-label="menu">⚙️</button></div>
+<div id="mis" hidden></div>
 <div id="msg"></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="btns">
@@ -87,7 +107,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
      Blocks and things
      ===================================================================== */
   var AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, LOG = 4, LEAVES = 5, SAND = 6, BEDROCK = 7, WATER = 8, PLANKS = 9, COBBLE = 10,
-    COAL_ORE = 11, IRON_ORE = 12, GOLD_ORE = 13, CRYS_ORE = 14, GLASS = 15, TORCH = 17, BENCH = 18, FURNACE = 19, BED = 20, SNOW = 21;
+    COAL_ORE = 11, IRON_ORE = 12, GOLD_ORE = 13, CRYS_ORE = 14, GLASS = 15, TORCH = 17, BENCH = 18, FURNACE = 19, BED = 20, SNOW = 21, TELE = 22;
   var STICK = 100, COAL = 101, IRON = 102, GOLD = 103, CRYSTAL = 104, APPLE = 105;
   var PICK = 110, AXE = 120, SWORD = 130, HELM = 140, CHEST = 150, LEGS = 160, BOOTS = 170; // + tier
   // block: n name, t pictures [top, bottom, side], h seconds to break by hand, tool that helps, tier of pickaxe needed, d what it drops
@@ -101,7 +121,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   B[GOLD_ORE] = { n: 'Guldmalm', t: [14, 14, 14], h: 4, tool: 'pick', tier: 2 }; B[CRYS_ORE] = { n: 'Krystal i sten', t: [15, 15, 15], h: 4.5, tool: 'pick', tier: 2, d: CRYSTAL };
   B[GLASS] = { n: 'Glas', t: [16, 16, 16], h: 0.4 }; B[TORCH] = { n: 'Fakkel', t: [17, 17, 17], h: 0.05 };
   B[BENCH] = { n: 'Arbejdsbord', t: [18, 10, 19], h: 1.6, tool: 'axe' }; B[FURNACE] = { n: 'Ovn', t: [11, 11, 20], h: 3, tool: 'pick' };
-  B[BED] = { n: 'Seng', t: [22, 10, 23], h: 0.8 }; B[SNOW] = { n: 'Sne', t: [24, 2, 25], h: 0.5 };
+  B[BED] = { n: 'Seng', t: [22, 10, 23], h: 0.8 }; B[SNOW] = { n: 'Sne', t: [24, 2, 25], h: 0.5 }; B[TELE] = { n: 'Teleportsten', t: [26, 11, 27], h: 1.2, tool: 'pick' };
   var OPAQUE = [], SOLID = [];
   for (var bi = 0; bi < 32; bi++) { OPAQUE[bi] = !!B[bi] && bi !== WATER && bi !== GLASS && bi !== TORCH; SOLID[bi] = !!B[bi] && bi !== WATER && bi !== TORCH; }
   var TIER = ['Træ', 'Sten', 'Jern', 'Guld', 'Krystal'], TIER_COL = ['#a07840', '#8c8c90', '#dcdce0', '#f0c830', '#50e0e0'], TIER_MAT = [PLANKS, COBBLE, IRON, GOLD, CRYSTAL];
@@ -121,7 +141,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   /* recipes: what you get, what it costs, and where it is made ('' anywhere, bench, furnace) */
   var RECIPES = [
     { out: [PLANKS, 4], cost: [[LOG, 1]], st: '' }, { out: [STICK, 4], cost: [[PLANKS, 2]], st: '' }, { out: [BENCH, 1], cost: [[PLANKS, 4]], st: '' },
-    { out: [TORCH, 4], cost: [[COAL, 1], [STICK, 1]], st: '' }, { out: [FURNACE, 1], cost: [[COBBLE, 8]], st: 'bench' }, { out: [BED, 1], cost: [[PLANKS, 3], [LEAVES, 3]], st: 'bench' }
+    { out: [TORCH, 4], cost: [[COAL, 1], [STICK, 1]], st: '' }, { out: [TELE, 1], cost: [[COBBLE, 4], [COAL, 1]], st: '' }, { out: [FURNACE, 1], cost: [[COBBLE, 8]], st: 'bench' }, { out: [BED, 1], cost: [[PLANKS, 3], [LEAVES, 3]], st: 'bench' }
   ];
   TIER_MAT.forEach(function (m, t) {
     RECIPES.push({ out: [PICK + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [AXE + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [SWORD + t, 1], cost: [[m, 2], [STICK, 1]], st: 'bench' });
@@ -172,6 +192,8 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     tile(22, [200, 50, 50], 16, function (x, y) { return y < 5 ? [240, 240, 240] : null; });
     tile(23, plank, 12, function (x, y) { return y < 7 ? [200, 50, 50] : null; });
     tile(24, [240, 244, 250], 8);
+    tile(26, [150, 80, 230], 30, function (x, y) { var d = Math.hypot(x - 7.5, y - 7.5); return d > 7 ? [84, 84, 90] : (Math.floor(d + Math.atan2(y - 7.5, x - 7.5) * 1.3) % 3 === 0 ? [236, 190, 255] : null); });
+    tile(27, [124, 124, 128], 24, function (x, y) { return y > 5 && y < 10 ? ((x + y) % 3 === 0 ? [236, 190, 255] : [150, 80, 230]) : cob(x, y); });
     tile(25, dirt, 28, function (x, y) { return y < 4 + ((x * 5) % 3) ? [240, 244, 250] : null; });
   })();
   var ICONS = {};
@@ -276,7 +298,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
      ===================================================================== */
   var canvas = $('#game');
   var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.autoClear = false;
   var scene = new THREE.Scene(), skyCol = new THREE.Color(0x7ec0ee);
   scene.background = skyCol; scene.fog = new THREE.Fog(0x7ec0ee, 30, 68);
   var camera = new THREE.PerspectiveCamera(70, 1, 0.1, 140); camera.rotation.order = 'YXZ';
@@ -358,14 +380,15 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     if (best) buildMesh(best);
     return made || !!best;
   }
-  function setBlock(x, y, z, b) {
+  function setBlock(x, y, z, b, quiet) {
     if (y < 0 || y >= WH) return; var c = chunkAt(x >> 4, z >> 4); if (!c) return;
     var lx = x & 15, lz = z & 15, i = (y * CS + lz) * CS + lx, old = c.data[i];
     c.data[i] = b; var k = ckey(c.cx, c.cz); (edits[k] = edits[k] || {})[i] = b;
     scanColumn(c, lx, lz); if (b === TORCH || old === TORCH) scanTorches(c);
     var wide = b === TORCH || old === TORCH; // a torch shines into the chunks around it
     for (var a = -1; a <= 1; a++) for (var e = -1; e <= 1; e++) { var n = chunks.get(ckey(c.cx + a, c.cz + e)); if (!n) continue; if (wide || (a === 0 && e === 0) || (a === -1 && lx === 0 && e === 0) || (a === 1 && lx === 15 && e === 0) || (e === -1 && lz === 0 && a === 0) || (e === 1 && lz === 15 && a === 0) || (lx < 1 || lx > 14 || lz < 1 || lz > 14)) n.dirty = true; }
-    if (hasNeighbours(c)) buildMesh(c);
+    if (b === TELE) waypoints.push([x, y, z]); else if (old === TELE) waypoints = waypoints.filter(function (w) { return w[0] !== x || w[1] !== y || w[2] !== z; });
+    if (!quiet && hasNeighbours(c)) buildMesh(c);
     saveSoon();
   }
   /** How light it is here, 0..1 (daylight from above, or a torch nearby). */
@@ -453,21 +476,21 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   var ovKind = '', paused = false;
   function nearStation(b) { var px = Math.floor(player.x), py = Math.floor(player.y), pz = Math.floor(player.z); for (var y = py - 3; y <= py + 4; y++) for (var z = pz - 5; z <= pz + 5; z++) for (var x = px - 5; x <= px + 5; x++) if (getBlock(x, y, z) === b) return true; return false; }
   function canMake(r) { for (var i = 0; i < r.cost.length; i++) if (count(r.cost[i][0]) < r.cost[i][1]) return false; return true; }
-  function stationOk(r) { return creative || !r.st || nearStation(r.st === 'bench' ? BENCH : FURNACE); }
+  function stationOk(r) { return creative || kid || !r.st || nearStation(r.st === 'bench' ? BENCH : FURNACE); }
   function craft(i) {
     var r = RECIPES[i]; if (!r) return false;
     if (!stationOk(r)) { say(r.st === 'bench' ? 'Stil dig ved et arbejdsbord' : 'Stil dig ved en ovn'); return false; }
     if (!canMake(r)) { say('Du mangler noget til den'); return false; }
     r.cost.forEach(function (c) { take(c[0], c[1]); }); give(r.out[0], r.out[1]); say('Du lavede ' + itemName(r.out[0]) + (r.out[1] > 1 ? ' ×' + r.out[1] : '')); saveSoon(); return true;
   }
-  function closeOv() { $('#ov').hidden = true; $('#ov').innerHTML = ''; ovKind = ''; paused = false; }
+  function closeOv() { $('#ov').hidden = true; $('#ov').innerHTML = ''; ovKind = ''; paused = false; misT = 0; setHint(null); }
   function tap(el, fn) { el.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); }
   function openBag() {
-    ovKind = 'bag'; paused = true; releaseAll();
+    ovKind = 'bag'; paused = true; releaseAll(); misT = 0;
     var ov = $('#ov'), ids = creative ? Object.keys(ICONS).map(Number) : Object.keys(inv).map(Number);
     ids.sort(function (a, b) { return a - b; });
     var h = '<div class="panel"><h2>🎒 Taske <button class="pbtn" id="oX">✕</button></h2>';
-    h += '<h3>Det har du på</h3><div class="grid">' + ['head', 'chest', 'legs', 'feet'].map(function (s) { var id = wear[s]; return '<div class="it" data-w="' + s + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"></div>'; }).join('') + '</div>';
+    h += '<h3>Det er dig</h3><div class="me"><img src="' + charPic() + '" alt=""><div class="grid">' + ['head', 'chest', 'legs', 'feet'].map(function (s) { var id = wear[s]; return '<div class="it" data-w="' + s + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"></div>'; }).join('') + '</div></div>';
     h += '<h3>Dine ting</h3><p>Tryk på en ting for at lægge den i den valgte plads forneden. Rustning tager du på, og æbler spiser du.</p><div class="grid">' + (ids.length ? ids.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"><em>' + (creative ? '' : inv[id]) + '</em></div>'; }).join('') : '') + '</div>' + (ids.length ? '' : '<p>Tasken er tom. Hak nogle klodser!</p>');
     h += '<h3>Det kan du lave</h3>';
     var order = RECIPES.map(function (r, i) { return i; }).sort(function (a, b) { return (canMake(RECIPES[b]) && stationOk(RECIPES[b]) ? 1 : 0) - (canMake(RECIPES[a]) && stationOk(RECIPES[a]) ? 1 : 0); });
@@ -494,14 +517,15 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     ovKind = 'menu'; paused = true; releaseAll();
     var ov = $('#ov');
     ov.innerHTML = '<div class="panel"><h2>⚙️ Menu <button class="pbtn" id="oX">✕</button></h2>' +
-      '<div class="row"><button class="pbtn' + (creative ? '' : ' g') + '" id="mSurv">⛏️ Overlevelse</button><button class="pbtn' + (creative ? ' g' : '') + '" id="mCrea">🎨 Kreativ</button></div>' +
-      '<p>' + (creative ? 'Kreativ: alle klodser og ting, uendeligt mange, og du kan ikke komme til skade.' : 'Overlevelse: hak klodser, byg værktøj, våben og rustning, og pas på monstrene om natten.') + '</p>' +
+      '<div class="row"><button class="pbtn' + (kid && !creative ? ' g' : '') + '" id="mKid">🧒 Børn</button><button class="pbtn' + (!kid && !creative ? ' g' : '') + '" id="mSurv">⛏️ Overlevelse</button><button class="pbtn' + (creative ? ' g' : '') + '" id="mCrea">🎨 Kreativ</button></div>' +
+      '<p>' + (creative ? 'Kreativ: alle klodser og ting, uendeligt mange, og du kan ikke komme til skade.' : kid ? 'Børn: missioner viser hele tiden, hvad du skal samle og lave. Du kan lave alt uden arbejdsbord, du hakker hurtigere, og du slår dig ikke, når du falder.' : 'Overlevelse: ingen missioner. Hak klodser, byg værktøj, våben og rustning, og pas på monstrene om natten.') + '</p>' +
       '<div class="row"><button class="pbtn" id="mMon">' + (peaceful ? '😴 Monstre: Fra' : '👾 Monstre: Til') + '</button></div>' +
       '<p>Sådan gør du: Hak træ → lav planker → lav et arbejdsbord og stil det. Ved bordet kan du lave hakker, økser, sværd, rustning, ovn og seng. I ovnen smelter du malm til barrer med kul. Fakler holder monstre væk. Sov i sengen for at springe natten over.</p>' +
       '<div class="row"><button class="pbtn r" id="mNew">🌍 Helt ny verden</button></div></div>';
     ov.hidden = false;
     tap($('#oX'), closeOv);
-    tap($('#mSurv'), function () { creative = false; drawHotbar(); saveSoon(); openMenu(); });
+    tap($('#mKid'), function () { creative = false; kid = true; drawHotbar(); saveSoon(); openMenu(); });
+    tap($('#mSurv'), function () { creative = false; kid = false; drawHotbar(); saveSoon(); openMenu(); });
     tap($('#mCrea'), function () { creative = true; drawHotbar(); saveSoon(); openMenu(); });
     tap($('#mMon'), function () { peaceful = !peaceful; if (peaceful) clearMonsters(); saveSoon(); openMenu(); });
     var armed = false;
@@ -545,7 +569,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   function breakTime(b) {
     var def = B[b], tool = toolInfo(), sp = 1;
     if (def.tool && tool.kind === def.tool) sp = TIER_SPEED[tool.t];
-    return def.h / sp;
+    return def.h / sp / (kid ? 1.6 : 1);
   }
   function canHarvest(b) { var def = B[b]; if (!def.tier) return true; var tool = toolInfo(); return tool.kind === 'pick' && TIER_RANK[tool.t] >= def.tier; }
   function breakBlock() {
@@ -559,13 +583,14 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     }
     // a torch cannot hang in the air
     if (getBlock(aim.x, aim.y + 1, aim.z) === TORCH) { setBlock(aim.x, aim.y + 1, aim.z, AIR); if (!creative) give(TORCH, 1); }
-    mineT = 0; mineKey = '';
+    mineT = 0; mineKey = ''; flags.mined = 1; misT = 0;
   }
   function placeBlock() {
     if (paused) return;
     if (!aim) { if (held() === APPLE && !creative) eat(); return; }
     // using the thing you point at
     if (aim.b === BENCH || aim.b === FURNACE) { openBag(); return; }
+    if (aim.b === TELE) { openMap(); return; }
     if (aim.b === BED) { sleep(); return; }
     var id = held();
     if (id === APPLE && !creative) { eat(); return; }
@@ -574,7 +599,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     if (y < 1 || y >= WH - 1 || (cur !== AIR && cur !== WATER)) return;
     if (id === TORCH) { if (!SOLID[getBlock(x, y - 1, z)]) { say('En fakkel skal stå på en klods'); return; } }
     else if (x + 1 > player.x - player.w && x < player.x + player.w && y + 1 > player.y && y < player.y + player.h && z + 1 > player.z - player.w && z < player.z + player.w) return;
-    setBlock(x, y, z, id); take(id, 1);
+    setBlock(x, y, z, id); take(id, 1); swing = 1; misT = 0;
     if (id === BED) { spawnPt = [x + 0.5, y + 1.05, z + 0.5]; say('Her er dit hjem nu 🛏️'); }
   }
   function sleep() {
@@ -737,7 +762,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   addEventListener('keyup', function (e) { keys[e.code] = false; if (e.code === 'KeyQ') { mining = false; mineT = 0; } });
   ['gesturestart', 'gesturechange', 'gestureend', 'contextmenu', 'dblclick'].forEach(function (n) { document.addEventListener(n, function (e) { e.preventDefault(); }, { passive: false }); });
   document.addEventListener('touchmove', function (e) { if (!(e.target.closest && e.target.closest('.panel'))) e.preventDefault(); }, { passive: false });
-  function resize() { var w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 78 : 68; camera.updateProjectionMatrix(); }
+  function resize() { var w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 88 : 66; camera.updateProjectionMatrix(); handCam.aspect = w / h; handCam.updateProjectionMatrix(); }
   addEventListener('resize', resize); addEventListener('orientationchange', function () { setTimeout(resize, 200); });
 
   /* =====================================================================
@@ -762,8 +787,304 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   /* =====================================================================
      Saving
      ===================================================================== */
+  /* =====================================================================
+     Children's mode: one mission after another, for ever, each showing with small pictures what to gather and
+     which tool to use. Buildings build themselves on their own site when you bring the things there.
+     ===================================================================== */
+  var kid = true, mIndex = 0, stars = 0, siteNo = 0, flags = {}, waypoints = [], base = null, mission = null, buildQ = [], buildJob = null, goal = null, misT = 0, findT = 0, findFor = -1, hintEl = null, hintRecipe = -1, lastMis = '';
+  function recipeFor(id) { for (var i = 0; i < RECIPES.length; i++) if (RECIPES[i].out[0] === id) return i; return -1; }
+  function have(id) { var n = creative ? 0 : (inv[id] || 0); for (var s in wear) if (wear[s] === id) n++; return n; }
+  var SRC = {}; SRC[COBBLE] = STONE; SRC[COAL] = COAL_ORE; SRC[CRYSTAL] = CRYS_ORE; SRC[APPLE] = LEAVES;
+  function sourceOf(id) { return SRC[id] || (B[id] ? id : 0); }
+  var CHAIN = [
+    { type: 'collect', title: 'Hak træ', want: [[LOG, 4]] },
+    { type: 'craft', title: 'Lav planker', want: [[PLANKS, 8]] },
+    { type: 'craft', title: 'Lav pinde', want: [[STICK, 4]] },
+    { type: 'craft', title: 'Lav en træhakke', want: [[PICK, 1]] },
+    { type: 'build', title: 'Byg dit hjem', build: 'home', want: [[LOG, 4], [PLANKS, 16]] },
+    { type: 'collect', title: 'Hak sten', want: [[COBBLE, 12]] },
+    { type: 'craft', title: 'Lav en stenhakke', want: [[PICK + 1, 1]] },
+    { type: 'craft', title: 'Lav et stensværd', want: [[SWORD + 1, 1]] },
+    { type: 'build', title: 'Byg et værksted', build: 'workshop', want: [[COBBLE, 20], [PLANKS, 8]] },
+    { type: 'collect', title: 'Find kul', want: [[COAL, 3]] },
+    { type: 'craft', title: 'Lav fakler', want: [[TORCH, 8]] },
+    { type: 'craft', title: 'Lav en teleportsten', want: [[TELE, 1]] },
+    { type: 'place', title: 'Stil teleportstenen', id: TELE },
+    { type: 'build', title: 'Byg en brønd', build: 'well', want: [[COBBLE, 12], [LOG, 4]] },
+    { type: 'collect', title: 'Find jernmalm', want: [[IRON_ORE, 3]] },
+    { type: 'craft', title: 'Smelt jern', want: [[IRON, 3]] },
+    { type: 'craft', title: 'Lav en jernhakke', want: [[PICK + 2, 1]] },
+    { type: 'build', title: 'Byg et tårn', build: 'tower', want: [[COBBLE, 40], [TORCH, 4]] },
+    { type: 'craft', title: 'Lav et jernsværd', want: [[SWORD + 2, 1]] },
+    { type: 'craft', title: 'Lav en jernhjelm', want: [[HELM, 1]] },
+    { type: 'build', title: 'Byg et drivhus', build: 'greenhouse', want: [[GLASS, 16], [PLANKS, 8]] }
+  ];
+  var EXTRA = [CHEST, LEGS, BOOTS, AXE + 2, PICK + 3, SWORD + 3, HELM + 1, PICK + 4, SWORD + 4, HELM + 2, CHEST + 2, LEGS + 2, BOOTS + 2];
+  var KINDS_B = [['house2', 'et stort hus', [[LOG, 8], [PLANKS, 30], [GLASS, 4]]], ['lighthouse', 'et fyrtårn', [[COBBLE, 50], [GLASS, 8], [TORCH, 4]]], ['well', 'en brønd', [[COBBLE, 12], [LOG, 4]]],
+    ['workshop', 'et værksted', [[COBBLE, 20], [PLANKS, 8]]], ['tower', 'et tårn', [[COBBLE, 40], [TORCH, 4]]], ['greenhouse', 'et drivhus', [[GLASS, 16], [PLANKS, 8]]]];
+  /** Mission number n: first the fixed road (wood, tools, home, stone, ...), then for ever: better gear and new buildings. */
+  function missionAt(n) {
+    if (n < CHAIN.length) return CHAIN[n];
+    var k = n - CHAIN.length;
+    if (k % 2 === 0 && EXTRA[k / 2]) return { type: 'craft', title: 'Lav ' + itemName(EXTRA[k / 2]).toLowerCase(), want: [[EXTRA[k / 2], 1]] };
+    var K = KINDS_B[k % KINDS_B.length], round = Math.floor(k / KINDS_B.length), mul = 1 + round * 0.25;
+    return { type: 'build', title: 'Byg ' + K[1] + (round ? ' nr. ' + (round + 1) : ''), build: K[0], want: K[2].map(function (w) { return [w[0], Math.ceil(w[1] * mul)]; }) };
+  }
+  // building sites lie in a spiral around where you started, far enough apart that nothing ever bumps into anything
+  function sitePos(n) {
+    var x = 0, z = 0, dx = 1, dz = 0, seg = 1, step = 0, turn = 0;
+    for (var i = 0; i < n; i++) { x += dx; z += dz; if (++step === seg) { step = 0; var t = dx; dx = -dz; dz = t; if (++turn % 2 === 0) seg++; } }
+    var sx = Math.floor(base[0]) + x * 15, sz = Math.floor(base[2]) + z * 15;
+    return { x: sx, z: sz, y: Math.max(colHeight(sx, sz), SEA + 1) };
+  }
+  function setMission(newSite) {
+    mission = Object.assign({}, missionAt(mIndex));
+    if (mission.type === 'build') { if (newSite) siteNo++; mission.site = sitePos(Math.max(1, siteNo)); }
+    if (mission.type === 'place') mission.before = mission.before != null ? mission.before : waypoints.length;
+    goal = null; findT = 0; lastMis = '';
+  }
+  /** What the mission needs, and under that what those things are made of when you lack them. */
+  function needRows(m) {
+    var rows = [], seen = {};
+    function add(id, n, sub, depth) {
+      var r = seen[id]; if (r) r.need += n; else { r = seen[id] = { id: id, need: n, sub: sub }; rows.push(r); }
+      var lack = Math.max(0, r.need - have(id)) - Math.max(0, r.need - n - have(id)), ri = recipeFor(id); // only what this call adds
+      if (lack > 0 && ri >= 0 && depth < 3) { var R = RECIPES[ri], times = Math.ceil(lack / R.out[1]); R.cost.forEach(function (c) { add(c[0], c[1] * times, true, depth + 1); }); }
+    }
+    (m.want || []).forEach(function (w) { add(w[0], w[1], false, 0); });
+    rows.forEach(function (r) { r.have = have(r.id); });
+    return rows;
+  }
+  function pickFor(blockId) { // the smallest pickaxe that can break this block, or 0
+    var d = B[blockId]; if (!d || d.tool !== 'pick') return d && d.tool === 'axe' ? AXE : 0;
+    return PICK + (d.tier || 0);
+  }
+  function toolGood(want) { // do you hold a tool at least as good as the wanted one?
+    if (!want) return true; var id = held(), base0 = Math.floor(want / 10) * 10; if (Math.floor(id / 10) * 10 !== base0) return false;
+    return base0 === AXE || TIER_RANK[id % 10] >= TIER_RANK[want % 10];
+  }
+  function ownGood(want) { for (var i = 0; i < 5; i++) { var id = Math.floor(want / 10) * 10 + i; if (count(id) > 0 && (Math.floor(want / 10) * 10 === AXE || TIER_RANK[i] >= TIER_RANK[want % 10])) return id; } return 0; }
+  function findNearest(b) { // the nearest block of this kind in the chunks around you (a little rather one you can see)
+    var px = player.x, py = player.y + 1, pz = player.z, pcx = Math.floor(px) >> 4, pcz = Math.floor(pz) >> 4, best = 1e9, out = null;
+    for (var a = -2; a <= 2; a++) for (var e = -2; e <= 2; e++) {
+      var c = chunks.get(ckey(pcx + a, pcz + e)); if (!c) continue; var d = c.data, x0 = c.cx * CS, z0 = c.cz * CS;
+      for (var i = 0; i < d.length; i++) {
+        if (d[i] !== b) continue;
+        var x = x0 + (i & 15), z = z0 + ((i >> 4) & 15), y = i >> 8, dist = Math.abs(x + 0.5 - px) + Math.abs(y + 0.5 - py) * 1.5 + Math.abs(z + 0.5 - pz);
+        if (dist >= best) continue;
+        var open = !OPAQUE[getBlock(x + 1, y, z)] || !OPAQUE[getBlock(x - 1, y, z)] || !OPAQUE[getBlock(x, y + 1, z)] || !OPAQUE[getBlock(x, y, z + 1)] || !OPAQUE[getBlock(x, y, z - 1)];
+        if (!open) dist += 6; if (dist < best) { best = dist; out = { x: x, y: y, z: z }; }
+      }
+    }
+    return out;
+  }
+  var beacon = new THREE.Group();
+  beacon.add(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 60, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xffe060, transparent: true, opacity: 0.4, depthWrite: false, fog: false, side: THREE.DoubleSide })));
+  beacon.children[0].position.y = 30; beacon.visible = false; scene.add(beacon);
+  var sitePad = new THREE.Mesh(new THREE.RingGeometry(1.6, 2.2, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe060, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide })); sitePad.visible = false; scene.add(sitePad);
+  function arrowTo(x, z) { // an arrow that turns to point the way, and how far it is
+    var dx = x - player.x, dz = z - player.z, fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
+    return '<i class="arr" style="transform:rotate(' + Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz).toFixed(2) + 'rad)">⬆</i> ' + Math.max(1, Math.round(Math.hypot(dx, dz))) + ' m';
+  }
+  function chip(id, txt, ok, sub) { return '<span class="chip' + (ok ? ' ok' : '') + (sub ? ' sub' : '') + '"><img src="' + ICONS[id] + '">' + txt + '</span>'; }
+  function setHint(el) { if (hintEl === el) return; if (hintEl) hintEl.classList.remove('hint'); hintEl = el; if (el) el.classList.add('hint'); }
+  function completeMission() {
+    stars++; mIndex++; flags.done = mIndex; sfxStar(); say('⭐ Mission klaret! Du har ' + stars + (stars === 1 ? ' stjerne' : ' stjerner'));
+    for (var k = 0; k < 3; k++) burst(player.x - 0.5 + Math.sin(player.yaw) * -1.5, player.y + 1 + k * 0.3, player.z - 0.5 - Math.cos(player.yaw) * 1.5, 0, 0xffe060);
+    setMission(true); saveSoon();
+  }
+  function sfxStar() { try { var A = sfxStar.a || (sfxStar.a = new (window.AudioContext || window.webkitAudioContext)()); [523, 659, 784, 1047].forEach(function (f, i) { var o = A.createOscillator(), g = A.createGain(); o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, A.currentTime + i * 0.09); g.gain.exponentialRampToValueAtTime(0.12, A.currentTime + i * 0.09 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, A.currentTime + i * 0.09 + 0.25); o.connect(g); g.connect(A.destination); o.start(A.currentTime + i * 0.09); o.stop(A.currentTime + i * 0.09 + 0.3); }); } catch (e) { /* no sound */ } }
+  /** Twice a second: is the mission done, what should the child do now, and which button should glow? */
+  function tickMission(dt) {
+    var el = $('#mis');
+    if (!kid || creative) { el.hidden = true; beacon.visible = sitePad.visible = false; setHint(null); return; }
+    if ((misT -= dt) > 0) return; misT = 0.4;
+    if (!mission) setMission(false);
+    var m = mission, rows = needRows(m), i, html = '<b>⭐ ' + stars + ' · ' + m.title + '</b>', guide = '', hint = null, tgt = null, wantTool = 0;
+    hintRecipe = -1;
+    if (buildJob) { guide = '🔨 Bygger… se bare!'; }
+    else if (m.type === 'place') {
+      if (waypoints.length > m.before) { completeMission(); return; }
+      html += '<div class="chips">' + chip(m.id, count(m.id) > 0 ? '✓' : '0/1', count(m.id) > 0) + '</div>';
+      if (count(m.id) < 1) { var rr = recipeFor(m.id); if (canMake(RECIPES[rr])) hintRecipe = rr; guide = 'Lav en ny i tasken 🎒'; }
+      else if (held() !== m.id) { guide = 'Vælg teleportstenen forneden'; hint = hotbar.children[hot.indexOf(m.id)] || null; }
+      else { guide = 'Sigt på jorden, og tryk 🧱 Byg'; hint = $('#bPlace'); }
+    } else {
+      var allMain = true, raw = null, craftRow = null;
+      for (i = 0; i < rows.length; i++) { var r = rows[i], ok = r.have >= r.need; if (!r.sub && !ok) allMain = false; if (!ok && recipeFor(r.id) < 0 && !raw) raw = r; }
+      for (i = rows.length - 1; i >= 0; i--) { var q = rows[i], ri = recipeFor(q.id); if (q.have < q.need && ri >= 0 && canMake(RECIPES[ri]) && stationOk(RECIPES[ri])) { craftRow = q; hintRecipe = ri; break; } }
+      html += '<div class="chips">' + rows.map(function (r) { return chip(r.id, Math.min(r.have, r.need) + '/' + r.need, r.have >= r.need, r.sub); }).join('') + '</div>';
+      if (allMain && m.type !== 'build') { completeMission(); return; }
+      if (allMain) { // carry it to the site: the building builds itself there
+        var S = m.site, d = Math.hypot(S.x + 0.5 - player.x, S.z + 0.5 - player.z);
+        tgt = { x: S.x, y: S.y + 1, z: S.z, site: true }; guide = 'Bær tingene hen til det gule lys ' + arrowTo(S.x + 0.5, S.z + 0.5);
+        if (d < 4.5 && !paused && chunkAt(S.x >> 4, S.z >> 4)) { m.want.forEach(function (w) { take(w[0], w[1]); }); startBuild(m.build, S); }
+      } else if (raw) {
+        hintRecipe = -1; var src = sourceOf(raw.id); wantTool = pickFor(src);
+        if (findFor !== src || (findT -= 0.4) <= 0 || (goal && getBlock(goal.x, goal.y, goal.z) !== src)) { findFor = src; findT = 2.4; goal = findNearest(src); }
+        tgt = goal;
+        guide = 'Find og hak ' + B[src].n.toLowerCase() + (goal ? ' ' + arrowTo(goal.x + 0.5, goal.z + 0.5) : ' – gå på opdagelse' + (B[src].tool === 'pick' && src !== STONE ? ', kig i huler og bjergsider' : ''));
+        if (wantTool && !toolGood(wantTool)) { var own = ownGood(wantTool); if (own) { hint = hotbar.children[hot.indexOf(own)] || null; if (!hint) guide = 'Læg din ' + itemName(own).toLowerCase() + ' i en plads forneden (🎒)'; } else if (B[src].tier) guide = 'Du skal først lave en ' + itemName(wantTool).toLowerCase(); }
+        if (!hint && !flags.mined) hint = $('#bBreak');
+      } else if (craftRow) guide = 'Åbn tasken 🎒 og lav ' + itemName(craftRow.id).toLowerCase();
+      else guide = 'Du mangler noget endnu';
+      if (wantTool) html += '<div class="chips"><span class="chip' + (toolGood(wantTool) ? ' ok' : '') + '">Brug <img src="' + ICONS[wantTool] + '"></span></div>';
+    }
+    if (hintRecipe >= 0 && !hint) { if (ovKind === 'bag') { hint = $('#ov [data-r="' + hintRecipe + '"]'); if (hint && hintEl !== hint) hint.scrollIntoView({ block: 'center' }); } else hint = $('#bBag'); }
+    setHint(paused && ovKind !== 'bag' ? null : hint);
+    html += '<small>' + guide + '</small>';
+    if (html !== lastMis) { lastMis = html; el.innerHTML = html; } el.hidden = false;
+    beacon.visible = !!tgt; if (tgt) beacon.position.set(tgt.x + 0.5, tgt.y, tgt.z + 0.5);
+    sitePad.visible = m.type === 'build' && !buildJob; if (sitePad.visible) sitePad.position.set(m.site.x + 0.5, m.site.y + 1.06, m.site.z + 0.5);
+  }
+
+  /* ---------- buildings that build themselves, block by block ---------- */
+  function hut(hw, hd, hgt, wall, corner, roof, floor) {
+    var out = [], x, z, y;
+    for (x = -hw; x <= hw; x++) for (z = -hd; z <= hd; z++) {
+      out.push([x, 0, z, floor]); out.push([x, hgt + 1, z, roof]);
+      var edge = Math.abs(x) === hw || Math.abs(z) === hd; if (!edge) continue;
+      for (y = 1; y <= hgt; y++) {
+        if (x === 0 && z === hd && y <= 2) continue; // the door
+        var win = y === 2 && ((z === -hd && x === 0) || (Math.abs(x) === hw && z === 0));
+        out.push([x, y, z, win ? GLASS : (Math.abs(x) === hw && Math.abs(z) === hd ? corner : wall)]);
+      }
+    }
+    out.push([-hw + 1, 1, -hd + 1, TORCH]); out.push([hw - 1, 1, hd - 1, TORCH]);
+    return out;
+  }
+  function towerOf(h, top) {
+    var out = [], x, z, y;
+    for (x = -2; x <= 2; x++) for (z = -2; z <= 2; z++) {
+      out.push([x, 0, z, COBBLE]); out.push([x, h + 1, z, COBBLE]);
+      var edge = Math.abs(x) === 2 || Math.abs(z) === 2; if (!edge) continue;
+      for (y = 1; y <= h; y++) { if (x === 0 && z === 2 && y <= 2) continue; out.push([x, y, z, y % 4 === 2 && (x === 0 || z === 0) ? GLASS : COBBLE]); }
+      if (top === 'wall') { if ((x + z) % 2 === 0) out.push([x, h + 2, z, COBBLE]); } else { out.push([x, h + 2, z, GLASS]); out.push([x, h + 3, z, COBBLE]); }
+    }
+    if (top === 'wall') [[-1, -1], [1, 1], [-1, 1], [1, -1]].forEach(function (p) { out.push([p[0], h + 2, p[1], TORCH]); });
+    else { for (x = -1; x <= 1; x++) for (z = -1; z <= 1; z++) out.push([x, h + 3, z, COBBLE]); out.push([0, h + 2, 0, TORCH]); }
+    out.push([-1, 1, -1, TORCH]);
+    return out;
+  }
+  function blueprint(kind) {
+    var b;
+    if (kind === 'home') { b = hut(3, 3, 3, PLANKS, LOG, PLANKS, PLANKS); b.push([2, 1, -2, BED], [-2, 1, 2, BENCH]); return { hw: 3, hd: 3, blocks: b }; }
+    if (kind === 'house2') { b = hut(4, 3, 4, PLANKS, LOG, PLANKS, PLANKS); b.push([3, 1, -2, BED], [-3, 1, -2, BENCH], [-3, 1, 2, FURNACE]); return { hw: 4, hd: 3, blocks: b }; }
+    if (kind === 'workshop') { b = hut(3, 2, 3, COBBLE, COBBLE, PLANKS, COBBLE); b.push([-2, 1, -1, BENCH], [2, 1, -1, FURNACE]); return { hw: 3, hd: 2, blocks: b }; }
+    if (kind === 'greenhouse') { b = hut(3, 2, 3, GLASS, PLANKS, GLASS, GRASS); b.push([-2, 1, 0, LEAVES], [2, 1, 0, LEAVES], [0, 1, -1, LOG], [0, 2, -1, LEAVES]); return { hw: 3, hd: 2, blocks: b }; }
+    if (kind === 'tower') return { hw: 2, hd: 2, blocks: towerOf(9, 'wall') };
+    if (kind === 'lighthouse') return { hw: 2, hd: 2, blocks: towerOf(12, 'light') };
+    b = []; // the well
+    for (var x = -1; x <= 1; x++) for (var z = -1; z <= 1; z++) { var mid = x === 0 && z === 0, cor = x !== 0 && z !== 0; b.push([x, 0, z, mid ? WATER : COBBLE]); if (!mid) b.push([x, 1, z, COBBLE]); if (cor) b.push([x, 2, z, LOG], [x, 3, z, LOG]); b.push([x, 4, z, PLANKS]); }
+    return { hw: 1, hd: 1, blocks: b };
+  }
+  function startBuild(kind, S) {
+    var P = blueprint(kind), R = Math.max(P.hw, P.hd) + 1, x, z, y;
+    // clear the site (trees, hills, anything in the way) and make level ground, with a little path to the door
+    for (x = -R; x <= R; x++) for (z = -R; z <= R + 3; z++) {
+      if (z > R && Math.abs(x) > 1) continue;
+      for (y = S.y + 1; y <= Math.min(WH - 1, S.y + 20); y++) if (getBlock(S.x + x, y, S.z + z) !== AIR) setBlock(S.x + x, y, S.z + z, AIR, true);
+      var top = getBlock(S.x + x, S.y, S.z + z); if (!SOLID[top] || top === LEAVES || top === LOG) setBlock(S.x + x, S.y, S.z + z, GRASS, true);
+      for (y = S.y - 1; y >= S.y - 3; y--) if (!SOLID[getBlock(S.x + x, y, S.z + z)]) setBlock(S.x + x, y, S.z + z, DIRT, true);
+    }
+    P.blocks.sort(function (a, b) { return (a[3] === TORCH ? 99 : a[1]) - (b[3] === TORCH ? 99 : b[1]); });
+    buildQ = P.blocks.map(function (b) { return [S.x + b[0], S.y + b[1], S.z + b[2], b[3]]; });
+    buildJob = { kind: kind, site: S, t: 0 };
+    // step back to the path in front of the door and watch
+    player.x = S.x + 0.5; player.z = S.z + R + 2.5; player.y = S.y + 1.05; player.vx = player.vy = player.vz = 0; player.yaw = 0; player.pitch = 0.12;
+    say('🔨 Nu bygger vi! Se bare…'); misT = 0;
+  }
+  function stepBuild(dt) {
+    buildJob.t += dt; var n = 0;
+    while (buildQ.length && n < 3 && buildJob.t > 0.03) { var b = buildQ.shift(); setBlock(b[0], b[1], b[2], b[3], true); if (n === 0) burst(b[0], b[1], b[2], b[3], 0xffe060); n++; }
+    if (n) buildJob.t = 0;
+    if (!buildQ.length) {
+      var S = buildJob.site, kind = buildJob.kind; buildJob = null;
+      if (kind === 'home') { spawnPt = [S.x + 0.5, S.y + 1.05, S.z + 0.5]; flags.home = 1; say('🏠 Dit hjem er færdigt! Du kan altid rejse hjem på kortet 🗺️'); }
+      completeMission();
+    }
+  }
+
+  /* ---------- the thing you hold, seen in front of you ---------- */
+  var handScene = new THREE.Scene(), handCam = new THREE.PerspectiveCamera(60, 1, 0.01, 10), hand = new THREE.Group(), handShown = -1, handMesh = null, swing = 0, walkT = 0, handTex = {};
+  handScene.add(hand);
+  function cubeGeo(id) {
+    var pos = [], uv = [], col = [], ind = [], n = 0, t = B[id].t;
+    FACES.forEach(function (F) {
+      var tile = t[F.t], tc = tile % ACOLS, tr = Math.floor(tile / ACOLS);
+      for (var k = 0; k < 4; k++) { pos.push(F.c[k][0] - 0.5, F.c[k][1] - 0.5, F.c[k][2] - 0.5); uv.push((tc + (UVC[k][0] ? 0.98 : 0.02)) / ACOLS, 1 - (tr + (UVC[k][1] ? 0.02 : 0.98)) / AROWS); col.push(F.s, F.s, F.s); }
+      ind.push(n, n + 1, n + 2, n, n + 2, n + 3); n += 4;
+    });
+    var g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(ind); return g;
+  }
+  function showHand(id) {
+    if (handMesh) { hand.remove(handMesh); handMesh.geometry.dispose(); handMesh.material.dispose(); }
+    if (!id) { handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.1, 0.42), new THREE.MeshBasicMaterial({ color: 0xe8b890 })); handMesh.rotation.set(-1.0, 0, 0.25); handMesh.position.set(0.1, -0.35, 0); }
+    else if (B[id] && id !== TORCH) { handMesh = new THREE.Mesh(cubeGeo(id), new THREE.MeshBasicMaterial({ map: atlas, vertexColors: true })); handMesh.rotation.set(0.25, 0.7, 0); }
+    else {
+      var tx = handTex[id]; if (!tx) { tx = handTex[id] = new THREE.TextureLoader().load(ICONS[id]); tx.magFilter = THREE.NearestFilter; tx.minFilter = THREE.NearestFilter; tx.generateMipmaps = false; }
+      handMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: tx, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide })); handMesh.rotation.set(0, -0.5, 0.15);
+    }
+    hand.add(handMesh); handShown = id;
+  }
+  function updateHand(dt, moving) {
+    var id = held(); if (id !== handShown) showHand(id);
+    var as = handCam.aspect, hw = Math.tan(0.5236) * as, s = 0.26 * Math.min(1, as + 0.4);
+    if (moving && player.ground) walkT += dt * 9;
+    swing = Math.max(0, swing - dt * 4); if (mining && (aim || aimMon)) swing = Math.max(swing, 0.5 + 0.5 * Math.sin(performance.now() / 70));
+    hand.scale.setScalar(s);
+    hand.position.set(Math.min(0.5, hw * 0.62) + Math.sin(walkT * 0.5) * 0.012, -0.34 + Math.abs(Math.cos(walkT * 0.5)) * 0.014 - swing * 0.08, -0.8);
+    hand.rotation.set(-swing * 0.9, 0, 0);
+  }
+
+  /* ---------- you, as you look right now (shown in the bag) ---------- */
+  var ICON_IMG = {}; Object.keys(ICONS).forEach(function (k) { var im = new Image(); im.src = ICONS[k]; ICON_IMG[k] = im; });
+  function charPic() {
+    var c = document.createElement('canvas'); c.width = 36; c.height = 46; var g = c.getContext('2d');
+    function r(col, x, y, w, h) { g.fillStyle = col; g.fillRect(x, y, w, h); }
+    function ac(id) { return ATIER_COL[id % 10]; }
+    r('#e8b890', 12, 2, 10, 10); r('#5a3a20', 12, 2, 10, 3); r('#222', 14, 7, 2, 2); r('#222', 18, 7, 2, 2); r('#b06a5a', 15, 10, 4, 1);
+    r('#3a7ad8', 11, 12, 12, 14); r('#3a7ad8', 7, 12, 4, 6); r('#3a7ad8', 23, 12, 4, 6); r('#e8b890', 7, 18, 4, 8); r('#e8b890', 23, 18, 4, 8);
+    r('#3a4a8a', 11, 26, 5, 14); r('#3a4a8a', 18, 26, 5, 14); r('#4a3020', 11, 40, 5, 4); r('#4a3020', 18, 40, 5, 4);
+    if (wear.head) { r(ac(wear.head), 11, 1, 12, 5); r(ac(wear.head), 11, 6, 2, 4); r(ac(wear.head), 21, 6, 2, 4); }
+    if (wear.chest) { r(ac(wear.chest), 11, 12, 12, 14); r(ac(wear.chest), 7, 12, 4, 5); r(ac(wear.chest), 23, 12, 4, 5); r('#0003', 16, 14, 2, 10); }
+    if (wear.legs) { r(ac(wear.legs), 11, 26, 5, 11); r(ac(wear.legs), 18, 26, 5, 11); }
+    if (wear.feet) { r(ac(wear.feet), 10, 37, 6, 7); r(ac(wear.feet), 18, 37, 6, 7); }
+    var id = held(); if (id && ICON_IMG[id] && ICON_IMG[id].complete) { g.imageSmoothingEnabled = false; g.drawImage(ICON_IMG[id], 22, 14, 14, 14); }
+    return c.toDataURL();
+  }
+
+  /* ---------- the map: where you are, your home, your teleport stones; tap a place to travel there ---------- */
+  var MAPCOL = {}; MAPCOL[GRASS] = [90, 168, 70]; MAPCOL[DIRT] = [134, 96, 66]; MAPCOL[STONE] = [130, 130, 134]; MAPCOL[SAND] = [222, 208, 154]; MAPCOL[SNOW] = [240, 244, 250]; MAPCOL[LEAVES] = [50, 120, 48]; MAPCOL[LOG] = [112, 84, 52];
+  MAPCOL[PLANKS] = [176, 136, 84]; MAPCOL[COBBLE] = [110, 110, 116]; MAPCOL[GLASS] = [196, 226, 240]; MAPCOL[TELE] = [190, 110, 255]; MAPCOL[BED] = [200, 50, 50];
+  function teleportTo(p, name) { player.x = p[0]; player.y = p[1]; player.z = p[2]; player.vx = player.vy = player.vz = 0; closeOv(); say('✨ ' + name); saveSoon(); }
+  function openMap() {
+    ovKind = 'map'; paused = true; releaseAll(); setHint(null);
+    var N = 144, half = N / 2, px = Math.floor(player.x), pz = Math.floor(player.z), cv = document.createElement('canvas'); cv.width = cv.height = N;
+    var g = cv.getContext('2d'), img = g.createImageData(N, N), d = img.data;
+    for (var j = 0; j < N; j++) for (var i = 0; i < N; i++) {
+      var wx = px + i - half, wz = pz + j - half, c = chunkAt(wx >> 4, wz >> 4), col, h;
+      if (c) { h = c.hm[(wz & 15) * CS + (wx & 15)]; var b = c.data[(h * CS + (wz & 15)) * CS + (wx & 15)]; col = h < SEA && c.data[((h + 1) * CS + (wz & 15)) * CS + (wx & 15)] === WATER ? [52, 112, 222] : (MAPCOL[b] || [130, 130, 134]); }
+      else { h = colHeight(wx, wz); col = h < SEA ? [52, 112, 222] : h <= SEA + 1 ? MAPCOL[SAND] : h >= 47 ? MAPCOL[SNOW] : MAPCOL[GRASS]; }
+      var k = 0.72 + Math.max(0, Math.min(0.4, (h - 24) / 70)) + (((wx ^ wz) & 1) ? 0.03 : 0), o = (j * N + i) * 4;
+      d[o] = Math.min(255, col[0] * k); d[o + 1] = Math.min(255, col[1] * k); d[o + 2] = Math.min(255, col[2] * k); d[o + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    var places = [{ n: '🏠 Hjem', p: spawnPt, icon: '🏠' }].concat(waypoints.map(function (w, q) { return { n: '🌀 Teleportsten ' + (q + 1), p: [w[0] + 0.5, w[1] + 1.05, w[2] + 0.5], icon: '🌀' }; }));
+    function mark(x, z, icon, cls, rot) { var u = (x - px + half) / N, v = (z - pz + half) / N; if (u < 0.02 || v < 0.02 || u > 0.98 || v > 0.98) { u = Math.max(0.03, Math.min(0.97, u)); v = Math.max(0.03, Math.min(0.97, v)); cls += ' far'; } return '<i class="mk ' + cls + '" style="left:' + (u * 100).toFixed(1) + '%;top:' + (v * 100).toFixed(1) + '%;' + (rot != null ? 'transform:translate(-50%,-50%) rotate(' + rot.toFixed(2) + 'rad)' : '') + '">' + icon + '</i>'; }
+    var marks = places.map(function (P) { return mark(P.p[0], P.p[2], P.icon, ''); }).join('');
+    if (kid && mission && mission.site && !creative) marks += mark(mission.site.x, mission.site.z, '📍', '');
+    marks += mark(player.x, player.z, '▲', 'me', -player.yaw);
+    var ov = $('#ov');
+    ov.innerHTML = '<div class="panel"><h2>🗺️ Kort <button class="pbtn" id="oX">✕</button></h2><div class="mapw"><img src="' + cv.toDataURL() + '">' + marks + '</div><h3>Rejs til</h3><div class="row">' +
+      places.map(function (P, q) { return '<button class="pbtn g" data-tp="' + q + '">' + P.n + '</button>'; }).join('') + '</div><p>Lav en teleportsten og stil den et sted. Så kan du rejse dertil herfra.</p></div>';
+    ov.hidden = false; tap($('#oX'), closeOv);
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-tp]'), function (el) { tap(el, function () { var P = places[+el.dataset.tp]; teleportTo(P.p, P.n); }); });
+  }
+  $('#bMap').addEventListener('click', function () { if (ovKind === 'map') closeOv(); else openMap(); });
+
   var saveTimer = 0;
-  function saveNow() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ seed: seed, edits: edits, p: [player.x, player.y, player.z, player.yaw, player.pitch], hp: player.hp, inv: inv, hot: hot, sel: selected, wear: wear, day: dayT, cr: creative, pe: peaceful, sp: spawnPt })); } catch (e) { /* storage full or off */ } }
+  function saveNow() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ seed: seed, edits: edits, p: [player.x, player.y, player.z, player.yaw, player.pitch], hp: player.hp, inv: inv, hot: hot, sel: selected, wear: wear, day: dayT, cr: creative, pe: peaceful, sp: spawnPt, kid: kid, mi: mIndex, st: stars, sn: siteNo, fl: flags, wp: waypoints, base: base, mb: mission && mission.before })); } catch (e) { /* storage full or off */ } }
   function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 700); }
   addEventListener('visibilitychange', function () { if (document.hidden) saveNow(); }); addEventListener('pagehide', saveNow);
 
@@ -775,33 +1096,39 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   if (saved && typeof saved.seed === 'number') {
     seed = saved.seed; edits = saved.edits || {}; inv = saved.inv || {}; if (saved.hot && saved.hot.length === hot.length) hot = saved.hot; selected = saved.sel || 0; if (saved.wear) wear = saved.wear;
     dayT = saved.day || 0.04; creative = !!saved.cr; peaceful = !!saved.pe; player.hp = saved.hp || 20;
+    kid = saved.kid !== false; mIndex = saved.mi || 0; stars = saved.st || 0; siteNo = saved.sn || 0; flags = saved.fl || {}; waypoints = saved.wp || []; base = saved.base || null;
   } else { saved = null; seed = Math.floor(Math.random() * 1e9); }
   // a good place to start: dry land near the middle
   function findStart() { for (var r = 0; r < 400; r += 3) for (var a = 0; a < 8; a++) { var x = Math.round(Math.cos(a * 0.785) * r), z = Math.round(Math.sin(a * 0.785) * r), h = colHeight(x, z); if (h > SEA + 1 && h < 44 && !isCave(x, h, z, h) && !isTree(x, z, h)) return [x + 0.5, h + 1.05, z + 0.5]; } return [0.5, 50, 0.5]; }
   if (saved && saved.p) { player.x = saved.p[0]; player.y = saved.p[1]; player.z = saved.p[2]; player.yaw = saved.p[3]; player.pitch = saved.p[4]; spawnPt = saved.sp || findStart(); }
-  else { spawnPt = findStart(); player.x = spawnPt[0]; player.y = spawnPt[1]; player.z = spawnPt[2]; inv[TORCH] = 4; inv[APPLE] = 3; hot[0] = TORCH; hot[1] = APPLE; }
+  else { spawnPt = findStart(); player.x = spawnPt[0]; player.y = spawnPt[1]; player.z = spawnPt[2]; inv[APPLE] = 3; hot[7] = APPLE; peaceful = true; }
+  if (!base) base = spawnPt.slice();
+  setMission(false); if (saved && saved.mb != null && mission.type === 'place') mission.before = saved.mb;
   // build the ground you stand on before the first picture
   (function () { var pcx = Math.floor(player.x) >> 4, pcz = Math.floor(player.z) >> 4, x, z; for (z = -2; z <= 2; z++) for (x = -2; x <= 2; x++) genChunk(pcx + x, pcz + z); for (z = -1; z <= 1; z++) for (x = -1; x <= 1; x++) buildMesh(chunks.get(ckey(pcx + x, pcz + z))); })();
   if (hits(player, player.x, player.y, player.z)) { player.y = topOf(Math.floor(player.x), Math.floor(player.z)) + 1.05; }
   drawHotbar(); resize(); $('#load').remove();
-  if (!saved) setTimeout(function () { say('Hak et træ, og åbn 🎒 for at lave ting'); }, 800);
+  if (!saved) setTimeout(function () { say('Velkommen! Følg missionen øverst ⭐'); }, 800);
 
   var last = performance.now(), saveClock = 0, regenT = 0, fallV = 0;
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000); last = now;
     streamWorld(1);
+    if (buildJob) stepBuild(dt);
+    tickMission(dt);
     if (!paused) {
       var mx = move.x, my = move.y;
       if (keys.KeyW || keys.ArrowUp) my = -1; if (keys.KeyS || keys.ArrowDown) my = 1; if (keys.KeyA || keys.ArrowLeft) mx = -1; if (keys.KeyD || keys.ArrowRight) mx = 1;
       var l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; } if (l < 0.12) { mx = 0; my = 0; }
       var sn = Math.sin(player.yaw), cs = Math.cos(player.yaw);
       fallV = moveBody(player, dt, mx * cs + my * sn, -mx * sn + my * cs, jumpHeld || keys.Space, SPEED);
-      if (fallV < -15 && !player.inWater) hurt((-fallV - 13) * 0.9);
+      if (fallV < -15 && !player.inWater && !kid) hurt((-fallV - 13) * 0.9);
       if (player.y < -20) { player.x = spawnPt[0]; player.y = spawnPt[1]; player.z = spawnPt[2]; player.vy = 0; }
       if ((regenT -= dt) <= 0 && player.hp < 20 && !creative) { regenT = 4; player.hp = Math.min(20, player.hp + 1); drawHotbar(); }
       updateSky(dt); updateMonsters(dt);
     }
-    camera.position.set(player.x, player.y + EYE, player.z); camera.rotation.set(player.pitch, player.yaw, 0); camera.updateMatrixWorld();
+    var movingNow = Math.hypot(player.vx, player.vz) > 0.8;
+    camera.position.set(player.x, player.y + EYE + (player.ground ? Math.abs(Math.sin(walkT * 0.5)) * 0.05 : 0), player.z); camera.rotation.set(player.pitch, player.yaw, 0); camera.updateMatrixWorld();
     $('#tint').style.opacity = getBlock(Math.floor(player.x), Math.floor(player.y + EYE), Math.floor(player.z)) === WATER ? 0.45 : 0;
     camera.getWorldDirection(dir);
     aim = rayBlock(); aimMon = null;
@@ -821,14 +1148,16 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     }
     $('#prog').style.display = progress > 0 ? 'block' : 'none'; if (progress > 0) $('#prog').firstChild.style.width = Math.round(progress * 100) + '%';
     updateCrumbs(dt);
-    renderer.render(scene, camera);
+    updateHand(dt, movingNow && !paused);
+    renderer.clear(); renderer.render(scene, camera); renderer.clearDepth(); renderer.render(handScene, handCam);
     if ((saveClock += dt) > 8) { saveClock = 0; saveSoon(); }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
   // for automated checks
-  window.__KLODS__ = { player: player, getBlock: getBlock, setBlock: setBlock, target: function () { return aim; }, hits: function (x, y, z) { return hits(player, x, y, z); }, give: give, count: count, craft: craft, RECIPES: RECIPES,
+  window.__KLODS__ = { get mission() { return mission; }, get mIndex() { return mIndex; }, get stars() { return stars; }, get building() { return !!buildJob; }, get waypoints() { return waypoints; }, get spawn() { return spawnPt; }, get kid() { return kid; }, missionAt: missionAt, TELE: TELE, openMap: openMap, needRows: needRows,
+    player: player, getBlock: getBlock, setBlock: setBlock, target: function () { return aim; }, hits: function (x, y, z) { return hits(player, x, y, z); }, give: give, count: count, craft: craft, RECIPES: RECIPES,
     spawnMonster: spawnMonster, monsters: monsters, setDay: function (t) { dayT = t; }, light: function () { return dayLight; }, lightAt: lightAt, chunks: chunks, hot: hot, wear: wear, useFromBag: useFromBag, hurt: hurt, armorPoints: armorPoints, save: saveNow,
     ids: { LOG: LOG, PLANKS: PLANKS, STICK: STICK, BENCH: BENCH, TORCH: TORCH, COBBLE: COBBLE, IRON: IRON, PICK: PICK, SWORD: SWORD, HELM: HELM, CHEST: CHEST, DIRT: DIRT }, setMode: function (c, p) { creative = c; peaceful = p; drawHotbar(); } };
 })();
