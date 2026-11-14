@@ -177,7 +177,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   /* =====================================================================
      Pictures: every block and thing is drawn here as small pixel art
      ===================================================================== */
-  var TILE = 16, ACOLS = 8, AROWS = 5;
+  var TILE = 16, ACOLS = 16, AROWS = 8; // room in the picture sheet for blocks from a mod pack
   var atlasCanvas = document.createElement('canvas'); atlasCanvas.width = TILE * ACOLS; atlasCanvas.height = TILE * AROWS;
   (function drawAtlas() {
     var g = atlasCanvas.getContext('2d'), rs = 7;
@@ -318,7 +318,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
         else if (isCave(wx, y, wz, h)) b = y <= 9 ? LAVA : AIR; // the deepest caves are full of lava
         else if (y < h - 3) {
           b = STONE; var o = hsh(wx >> 1, (y >> 1) + 9000, wz >> 1), o2 = hsh(wx, y + 3000, wz);
-          if (o < 0.022 && o2 < 0.75) b = COAL_ORE; else if (o > 0.985 && y < 48 && o2 < 0.7) b = IRON_ORE; else if (o > 0.5 && o < 0.506 && y < 26) b = GOLD_ORE; else if (o > 0.3 && o < 0.304 && y < 18) b = CRYS_ORE;
+          if (MOD_ORES.length && o > 0.7 && o < 0.7 + 0.003 * MOD_ORES.length && o2 < 0.8) b = MOD_ORES[Math.floor((o - 0.7) / 0.003)]; else if (o < 0.022 && o2 < 0.75) b = COAL_ORE; else if (o > 0.985 && y < 48 && o2 < 0.7) b = IRON_ORE; else if (o > 0.5 && o < 0.506 && y < 26) b = GOLD_ORE; else if (o > 0.3 && o < 0.304 && y < 18) b = CRYS_ORE;
         }
         else if (y < h) b = fill; else b = pool ? LAVA : top;
         d[(y * CS + lz) * CS + lx] = b;
@@ -397,7 +397,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
       o.ind.push(o.n, o.n + 1, o.n + 2, o.n, o.n + 2, o.n + 3); o.n += 4;
     }
     for (y = 0; y < WH; y++) for (lz = 0; lz < CS; lz++) for (lx = 0; lx < CS; lx++) {
-      var b = d[(y * CS + lz) * CS + lx]; if (b === AIR) continue;
+      var b = d[(y * CS + lz) * CS + lx]; if (b === AIR || !B[b]) continue; // (a block from a mod pack that is not loaded)
       if (b === TORCH) { // a little stick with a flame
         var sl0 = sky(lx, y, lz), w0 = 0.42, w1 = 0.58, hh = 0.62;
         for (f = 0; f < 6; f++) { if (f === 3) continue; var F0 = FACES[f], pp = []; for (k = 0; k < 4; k++) pp.push([lx + (F0.c[k][0] ? w1 : w0), y + F0.c[k][1] * hh, lz + (F0.c[k][2] ? w1 : w0)]); quad(S, pp, 17, 1, sl0, 1); }
@@ -502,13 +502,13 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
      ===================================================================== */
   var inv = {}, hot = [0, 0, 0, 0, 0, 0, 0, 0], selected = 0, wear = { head: 0, chest: 0, legs: 0, feet: 0 };
   var creative = false, peaceful = false, spawnPt = [0.5, 50, 0.5];
-  function count(id) { return creative ? 99 : (inv[id] || 0); }
+  function count(id) { return creative || (B[id] && B[id].mod) ? 99 : (inv[id] || 0); }
   function give(id, n) {
     if (!creative) { inv[id] = (inv[id] || 0) + n; sfxPop(); }
     if (hot.indexOf(id) < 0) { var e = hot[selected] === 0 ? selected : hot.indexOf(0); if (e >= 0) hot[e] = id; }
     drawHotbar();
   }
-  function take(id, n) { if (creative) return; inv[id] = (inv[id] || 0) - n; if (inv[id] <= 0) { delete inv[id]; var i = hot.indexOf(id); if (i >= 0) hot[i] = 0; } drawHotbar(); }
+  function take(id, n) { if (creative || (B[id] && B[id].mod)) return; inv[id] = (inv[id] || 0) - n; if (inv[id] <= 0) { delete inv[id]; var i = hot.indexOf(id); if (i >= 0) hot[i] = 0; } drawHotbar(); }
   function held() { var id = hot[selected]; return id && count(id) > 0 ? id : 0; }
   function armorPoints() { var p = 0; for (var s in wear) { var id = wear[s]; if (id) p += ARMOR_PTS[armorBase(id)][id % 10]; } return p; }
   var hotbar = $('#hotbar');
@@ -516,7 +516,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     for (var i = 0; i < hot.length; i++) {
       var el = hotbar.children[i], id = hot[i], n = id ? count(id) : 0;
       el.style.backgroundImage = id && n > 0 ? 'url(' + ICONS[id] + ')' : 'none';
-      el.firstChild.textContent = id && n > 1 && !creative ? n : '';
+      el.firstChild.textContent = id && n > 1 && !creative && !(B[id] && B[id].mod) ? n : '';
       el.classList.toggle('sel', i === selected);
     }
     var h = '', full = Math.ceil(player.hp / 2);
@@ -563,6 +563,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     var h = '<div class="panel"><h2>🎒 Taske <button class="pbtn" id="oX">✕</button></h2>';
     h += '<h3>Det er dig</h3><div class="me"><img src="' + charPic() + '" alt=""><div class="grid">' + ['head', 'chest', 'legs', 'feet'].map(function (s) { var id = wear[s]; return '<div class="it" data-w="' + s + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"></div>'; }).join('') + ['pick', 'axe', 'shovel', 'sword'].map(function (k) { var id = gear[k]; return '<div class="it gs" data-g="' + k + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"><small>' + GEAR_NAME[k] + '</small></div>'; }).join('') + '</div></div>';
     h += '<h3>Dine ting</h3><p class="bagp">Tryk på værktøj, våben og rustning for at tage det på. Så bruges det rigtige af sig selv. Klodser lægges i pladsen forneden, og mad spiser du.</p><div class="grid">' + (ids.length ? ids.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"><em>' + (creative ? '' : inv[id]) + '</em></div>'; }).join('') : '') + '</div>' + (ids.length ? '' : '<p>Tasken er tom. Hak nogle klodser!</p>');
+    if (MOD.blocks.length) h += '<h3>🧩 Mod-klodser</h3><div class="grid">' + MOD.blocks.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"></div>'; }).join('') + '</div>';
     h += '<h3>Det kan du lave</h3>';
     var order = RECIPES.map(function (r, i) { return i; }).sort(function (a, b) { return (canMake(RECIPES[b]) && stationOk(RECIPES[b]) ? 1 : 0) - (canMake(RECIPES[a]) && stationOk(RECIPES[a]) ? 1 : 0); });
     h += order.map(function (i) {
@@ -595,6 +596,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
       '<div class="row"><button class="pbtn' + (kid && !creative ? ' g' : '') + '" id="mKid">🧒 Børn</button><button class="pbtn' + (!kid && !creative ? ' g' : '') + '" id="mSurv">⛏️ Overlevelse</button><button class="pbtn' + (creative ? ' g' : '') + '" id="mCrea">🎨 Kreativ</button></div>' +
       '<p>' + (creative ? 'Kreativ: alle klodser og ting, uendeligt mange, og du kan ikke komme til skade.' : kid ? 'Børn: missioner viser hele tiden, hvad du skal samle og lave. Du hakker hurtigere, og du slår dig ikke, når du falder.' : 'Overlevelse: ingen missioner. Hak klodser, byg værktøj, våben og rustning, og pas på monstrene om natten.') + '</p>' +
       '<div class="row"><button class="pbtn" id="mMon">' + (peaceful ? '😴 Monstre: Fra' : '👾 Monstre: Til') + '</button><button class="pbtn" id="mMus">' + (musicOn ? '🎵 Musik: Til' : '🎵 Musik: Fra') + '</button><button class="pbtn" id="mSnd">' + (soundOn ? '🔊 Lyd: Til' : '🔇 Lyd: Fra') + '</button></div>' +
+      '<div class="row"><button class="pbtn g" id="mMod">🧩 Mod-pakke' + (MOD.name ? ': ' + MOD.name.replace(/[<>&]/g, '').slice(0, 18) : '') + '</button></div>' +
       '<div class="row"><button class="pbtn" id="mView">👁️ Udsyn: ' + (RENDER <= 4 ? 'Kort' : RENDER <= 6 ? 'Langt' : 'Meget langt') + '</button></div>' +
       '<p>Alt laves i tasken 🎒. Malm smeltes til barrer med kul. Fakler holder monstre væk. Sov i en seng for at springe natten over. Sigt på en købmand og tryk Byg for at bytte.</p>' +
       '<div class="row"><button class="pbtn r" id="mNew">🌍 Helt ny verden</button></div></div>';
@@ -606,6 +608,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     tap($('#mMon'), function () { peaceful = !peaceful; if (peaceful) clearMonsters(); saveSoon(); openMenu(); });
     tap($('#mMus'), function () { musicOn = !musicOn; saveSoon(); openMenu(); });
     tap($('#mSnd'), function () { soundOn = !soundOn; saveSoon(); openMenu(); });
+    tap($('#mMod'), function () { openModPanel(); });
     tap($('#mView'), function () { setView(RENDER <= 4 ? 6 : RENDER <= 6 ? 8 : 4); saveSoon(); openMenu(); });
     var armed = false;
     // a wholly new world: new land, new start place, and you start again with empty hands
@@ -679,6 +682,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   function placeBlock() {
     if (paused) return;
     if (aimMon && KINDS[aimMon.kind].trader) { openTrade(aimMon); return; }
+    if (aimMon && KINDS[aimMon.kind].friend) { aimMon.pet = !aimMon.pet; say(aimMon.pet ? '💛 ' + KINDS[aimMon.kind].n + ' følger nu med dig!' : KINDS[aimMon.kind].n + ' bliver her'); tone(660, 0.12, 0.1, 'triangle', 990); return; }
     if (!aim) { if ((held() === APPLE || held() === MEAT) && !creative) eat(held()); return; }
     // using the thing you point at
     if (aim.b === TELE) { openMap(); return; }
@@ -806,6 +810,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     g.userData.legs = L;
   }
   function buildMonster(kind) {
+    if (KINDS[kind].modi != null) return buildModCreature(KINDS[kind].modi);
     var g = new THREE.Group(), K = KINDS[kind], c = K.col, i;
     if (kind === 'slim') { box(g, 0.8, 0.7, 0.8, 0, 0.35, 0, c); box(g, 0.5, 0.12, 0.5, 0, 0.76, 0, 0x8ae880); box(g, 0.14, 0.14, 0.05, -0.18, 0.45, 0.41, 0x10301a, true); box(g, 0.14, 0.14, 0.05, 0.18, 0.45, 0.41, 0x10301a, true); }
     else if (kind === 'skygge' || kind === 'trader') {
@@ -855,6 +860,8 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     if (!SOLID[below] || below === LEAVES || below === PINE || below === CACTUS || below === PLANKS || below === COBBLE || getBlock(x, y, z) !== AIR || getBlock(x, y + 1, z) !== AIR) return;
     var list = BIOME_ANIMALS[biomeAt(x, z)], traders = 0; for (var i = 0; i < monsters.length; i++) if (monsters[i].kind === 'trader') traders++;
     if (traders < 2 && Math.random() < 0.07) { spawnMonster('trader', x + 0.5, y + 0.02, z + 0.5); return; }
+    var mods = Object.keys(KINDS).filter(function (k) { return KINDS[k].modi != null; });
+    if (mods.length && Math.random() < 0.55) { spawnMonster(mods[Math.floor(Math.random() * mods.length)], x + 0.5, y + 0.02, z + 0.5); return; }
     var kind = list[Math.floor(Math.random() * list.length)], n = 1 + Math.floor(Math.random() * 3);
     for (var k = 0; k < n; k++) if (getBlock(x + k, y, z) === AIR && SOLID[getBlock(x + k, y - 1, z)]) spawnMonster(kind, x + k + 0.5, y + 0.02, z + 0.5);
   }
@@ -867,6 +874,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   function hitMonster(m) {
     var K = KINDS[m.kind];
     if (K.trader) { say('Købmanden vil hellere bytte. Sigt på ham, og tryk 🧱 Byg'); return; }
+    if (K.friend) { say(K.n + ' vil hellere være venner. Sigt, og tryk 🧱 Byg'); return; }
     var tool = toolInfo('sword'); if (!tool.kind) tool = toolInfo(); var dmg = tool.kind === 'sword' ? SWORD_DMG[tool.t] : tool.kind === 'axe' ? 3 : tool.kind === 'pick' ? 2 : 1;
     if (creative) dmg = 99;
     m.hp -= dmg; m.flash = 0.2; m.fleeT = 4; var dx = m.x - player.x, dz = m.z - player.z, l = Math.hypot(dx, dz) || 1; m.vx = dx / l * 7; m.vz = dz / l * 7; m.vy = 4.5; m.ground = false;
@@ -896,7 +904,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     if ((animalT -= dt) <= 0) { animalT = 1.5; if (countKind(true) < 10 && sunUp > 0.2) trySpawnAnimal(); homeTrader(); }
     for (var i = monsters.length - 1; i >= 0; i--) {
       var m = monsters[i], K = KINDS[m.kind], dx = player.x - m.x, dz = player.z - m.z, dist = Math.hypot(dx, dz), dy = player.y - m.y;
-      if (dist > (K.passive ? 72 : 60) || m.y < -10 || !chunkAt(Math.floor(m.x) >> 4, Math.floor(m.z) >> 4)) { removeMonster(m); continue; }
+      if ((m.pet ? dist > 200 : dist > (K.passive ? 72 : 60)) || m.y < -10 || !chunkAt(Math.floor(m.x) >> 4, Math.floor(m.z) >> 4)) { removeMonster(m); continue; }
       m.t += dt; m.cool -= dt; m.flash -= dt; m.fleeT -= dt;
       var lit = lightAt(Math.floor(m.x), Math.floor(m.y + 0.5), Math.floor(m.z));
       // daylight makes the monsters wither away
@@ -904,6 +912,12 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
       var wx = 0, wz = 0, chase = !K.passive && dist < 22 && !creative, sp = K.sp, face = null;
       if (chase) { if (dist > m.w + player.w + 0.25) { wx = dx / dist; wz = dz / dist; } face = Math.atan2(dx, dz); } // stops in front of you, never inside you
       else if (K.trader) { if (dist < 9) face = Math.atan2(dx, dz); }
+      else if (m.pet) {
+        if (dist > 2.6) { wx = dx / dist; wz = dz / dist; sp = Math.min(6, K.sp + dist * 0.5); } face = Math.atan2(dx, dz);
+        // a friend that is stuck or left far behind hops over to you
+        m.stuck = dist > 4 && Math.hypot(m.vx, m.vz) < 0.4 ? (m.stuck || 0) + dt : 0;
+        if (dist > 30 || m.stuck > 1.5) { for (var q = 0; q < 8; q++) { var a = player.yaw + Math.PI + (q - 3.5) * 0.5, nx = player.x + Math.sin(a) * 1.8, nz = player.z + Math.cos(a) * 1.8; if (!hits(m, nx, player.y + 0.02, nz)) { m.x = nx; m.z = nz; m.y = player.y + 0.02; m.vx = m.vy = m.vz = 0; m.stuck = 0; break; } } }
+      }
       else if (K.passive && m.fleeT > 0 && dist > 0.1) { wx = -dx / dist; wz = -dz / dist; sp *= 1.8; }
       else { if (Math.random() < dt * 0.35) { m.wander = Math.random() * 6.28; m.idle = Math.random() < 0.45; } if (!m.idle) { wx = Math.sin(m.wander) * 0.5; wz = Math.cos(m.wander) * 0.5; } }
       var jump = false;
@@ -917,6 +931,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
       var sw = Math.sin(m.t * 9) * (Math.hypot(m.vx, m.vz) > 0.3 ? 0.7 : 0), ud = m.mesh.userData, q;
       if (m.kind === 'skygge') { ud.legs[0].rotation.x = sw; ud.legs[1].rotation.x = -sw; ud.arms[0].rotation.x = -1.2 + sw * 0.3; ud.arms[1].rotation.x = -1.2 - sw * 0.3; }
       else if (m.kind === 'kravl') for (q = 0; q < 6; q++) ud.legs[q].rotation.y = Math.sin(m.t * 14 + q) * 0.5;
+      else if (K.modi != null) m.mesh.children[0].position.y = m.mesh.children[0].userData.y0 + (Math.hypot(m.vx, m.vz) > 0.3 && m.ground ? Math.abs(Math.sin(m.t * 9)) * 0.08 : 0);
       else if (m.kind === 'slim') m.mesh.scale.y = m.ground ? 0.85 + Math.sin(m.t * 5) * 0.06 : 1.15;
       else if (ud.legs) for (q = 0; q < ud.legs.length; q++) ud.legs[q].rotation.x = (q % 3 === 0 ? sw : -sw);
       var l = 0.3 + 0.7 * Math.max(lit, 0.0), red = m.flash > 0;
@@ -1336,6 +1351,235 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   }
   press($('#bMap'), function () { if (ovKind === 'map') closeOv(); else openMap(); });
 
+  /* =====================================================================
+     Mod packs: you choose a .jar (or .zip) file on your own phone, and the game reads the pictures and models in it.
+     Block pictures become new blocks (ores also grow under ground), and Bedrock models (.geo.json with a picture)
+     become creatures that walk around. The file is read in pieces right on the phone and never sent anywhere.
+     ===================================================================== */
+  var MOD_KEY = 'klodsverden-mod-v1', MOD_ID0 = 32, MOD_IDMAX = 96, MOD_TILE0 = 40, MOD_TILEMAX = ACOLS * AROWS, MOD_ORES = [], MOD = { name: '', blocks: [], creatures: [] };
+  function isMod(id) { return !!(B[id] && B[id].mod); }
+  function prettyName(s) { s = s.replace(/[_\-.]+/g, ' ').replace(/\s+/g, ' ').trim(); return s.charAt(0).toUpperCase() + s.slice(1); }
+  /** Put the mod blocks into the game: their names, which pictures go on which side, and whether light goes through. */
+  function applyModBlocks(list) {
+    MOD_ORES = []; var tile = MOD_TILE0, made = [];
+    list.forEach(function (m, i) {
+      var id = MOD_ID0 + i; if (id >= MOD_IDMAX || tile + m.tex.length > MOD_TILEMAX) return;
+      var tiles = m.tex.map(function () { return tile++; }), t = [tiles[0], tiles[Math.min(1, tiles.length - 1)], tiles[Math.min(2, tiles.length - 1)]];
+      B[id] = { n: m.n, t: t, h: m.ore ? 3.5 : 1.4, tool: m.ore || m.stone ? 'pick' : undefined, mod: true };
+      OPAQUE[id] = !m.clear; SOLID[id] = true; ICONS[id] = m.tex[Math.min(2, m.tex.length - 1)];
+      if (m.ore) MOD_ORES.push(id);
+      made.push({ id: id, tiles: tiles, tex: m.tex });
+    });
+    // draw the pictures into the big picture sheet, then show the world again with them
+    var g = atlasCanvas.getContext('2d'), left = 0;
+    made.forEach(function (b) { b.tex.forEach(function (src, k) { left++; var im = new Image(); im.onload = im.onerror = function () { var t = b.tiles[k]; g.clearRect((t % ACOLS) * TILE, Math.floor(t / ACOLS) * TILE, TILE, TILE); try { g.drawImage(im, (t % ACOLS) * TILE, Math.floor(t / ACOLS) * TILE, TILE, TILE); } catch (e) { /* a broken picture */ } if (--left === 0) { atlas.needsUpdate = true; chunks.forEach(function (c) { c.dirty = true; }); } }; im.src = src; }); });
+    MOD.blocks = made.map(function (b) { return b.id; });
+  }
+  (function loadModBlocksNow() { try { var s = JSON.parse(localStorage.getItem(MOD_KEY) || 'null'); if (s && s.blocks) { MOD.name = s.name || ''; applyModBlocks(s.blocks); } } catch (e) { /* no mod pack */ } })();
+
+  /* ---------- a little database on the phone for the creatures (too big for the normal save) ---------- */
+  function idb(mode, fn) {
+    return new Promise(function (res, rej) {
+      if (!window.indexedDB) { rej(new Error('no indexedDB')); return; }
+      var r = indexedDB.open('klodsverden', 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
+      r.onerror = function () { rej(r.error); };
+      r.onsuccess = function () { var db = r.result, tx = db.transaction('kv', mode), q = fn(tx.objectStore('kv')); tx.oncomplete = function () { db.close(); res(q && q.result); }; tx.onerror = function () { db.close(); rej(tx.error); }; };
+    });
+  }
+
+  /* ---------- reading a zip file (a .jar is a zip) in pieces, so even a very big file fits on a phone ---------- */
+  function slice(file, a, n) { return file.slice(a, a + n).arrayBuffer(); }
+  function zipIndex(file) {
+    var tailLen = Math.min(file.size, 70000);
+    return slice(file, file.size - tailLen, tailLen).then(function (buf) {
+      var tail = new DataView(buf), e = -1, i;
+      for (i = tail.byteLength - 22; i >= 0; i--) if (tail.getUint32(i, true) === 0x06054b50) { e = i; break; }
+      if (e < 0) throw new Error('Filen er ikke en .jar- eller .zip-fil');
+      var n = tail.getUint16(e + 10, true), cdSize = tail.getUint32(e + 12, true), cdOff = tail.getUint32(e + 16, true);
+      var big = (cdOff === 0xffffffff || n === 0xffff) && e >= 20 && tail.getUint32(e - 20, true) === 0x07064b50;
+      var go = big ? slice(file, Number(tail.getBigUint64(e - 12, true)), 56).then(function (b) { var v = new DataView(b); n = Number(v.getBigUint64(32, true)); cdSize = Number(v.getBigUint64(40, true)); cdOff = Number(v.getBigUint64(48, true)); }) : Promise.resolve();
+      return go.then(function () { return slice(file, cdOff, cdSize); }).then(function (cbuf) {
+        var cd = new DataView(cbuf), out = [], p = 0, dec = new TextDecoder();
+        for (var k = 0; k < n && p + 46 <= cd.byteLength; k++) {
+          if (cd.getUint32(p, true) !== 0x02014b50) break;
+          var method = cd.getUint16(p + 10, true), csize = cd.getUint32(p + 20, true), usize = cd.getUint32(p + 24, true), nl = cd.getUint16(p + 28, true), xl = cd.getUint16(p + 30, true), cl = cd.getUint16(p + 32, true), off = cd.getUint32(p + 42, true);
+          var name = dec.decode(new Uint8Array(cbuf, p + 46, nl));
+          if (csize === 0xffffffff || usize === 0xffffffff || off === 0xffffffff) { // big entries keep their sizes in an extra field
+            var q = p + 46 + nl, qe = q + xl;
+            while (q + 4 <= qe) { var id = cd.getUint16(q, true), sz = cd.getUint16(q + 2, true), r = q + 4;
+              if (id === 1) { if (usize === 0xffffffff) { usize = Number(cd.getBigUint64(r, true)); r += 8; } if (csize === 0xffffffff) { csize = Number(cd.getBigUint64(r, true)); r += 8; } if (off === 0xffffffff) { off = Number(cd.getBigUint64(r, true)); } }
+              q += 4 + sz; }
+          }
+          out.push({ name: name, method: method, csize: csize, usize: usize, off: off });
+          p += 46 + nl + xl + cl;
+        }
+        return out;
+      });
+    });
+  }
+  function zipRead(file, e) {
+    return slice(file, e.off, 30).then(function (hb) {
+      var h = new DataView(hb), start = e.off + 30 + h.getUint16(26, true) + h.getUint16(28, true);
+      return slice(file, start, e.csize);
+    }).then(function (data) {
+      if (e.method === 0) return new Uint8Array(data);
+      if (e.method !== 8 || typeof DecompressionStream === 'undefined') throw new Error('Kan ikke pakke ud');
+      return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer().then(function (b) { return new Uint8Array(b); });
+    });
+  }
+  function pngToSmall(bytes, size) { // a picture made small (the first frame if it is a strip of frames)
+    return new Promise(function (res) {
+      var url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' })), im = new Image();
+      im.onload = function () { var c = document.createElement('canvas'), s = size || TILE; c.width = c.height = s; var g = c.getContext('2d'); g.imageSmoothingEnabled = false; var w = im.width, hh = Math.min(im.height, w); g.drawImage(im, 0, 0, w, hh, 0, 0, s, s); URL.revokeObjectURL(url); res(c.toDataURL()); };
+      im.onerror = function () { URL.revokeObjectURL(url); res(null); };
+      im.src = url;
+    });
+  }
+  function pngToURL(bytes) { return new Promise(function (res) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = function () { res(null); }; r.readAsDataURL(new Blob([bytes], { type: 'image/png' })); }); }
+
+  /** Read a mod pack: tell(text) shows how far it has come. Resolves to what was found. */
+  function readModPack(file, tell) {
+    var found = { blocks: [], creatures: [] };
+    tell('Læser filen…');
+    return zipIndex(file).then(function (list) {
+      // ---- blocks: assets/<mod>/textures/block(s)/<name>.png, grouped as one block with top, bottom and sides
+      var groups = {};
+      list.forEach(function (e) {
+        var m = /^assets\/([^\/]+)\/textures\/blocks?\/(?:[^\/]+\/)*([^\/]+)\.png$/i.exec(e.name); if (!m || m[1] === 'minecraft' || e.usize > 400000) return;
+        var nm = m[2].toLowerCase(), part = /_(top|bottom|side|front|end)$/.exec(nm), base = part ? nm.slice(0, -part[0].length) : nm;
+        if (/(overlay|particle|_stage_?\d|flow|still|_on$|_off$|crop|sapling|flower|door|pane|grass_side_overlay)/.test(nm)) return;
+        var g = groups[m[1] + ':' + base] || (groups[m[1] + ':' + base] = { base: base, ns: m[1], parts: {} });
+        g.parts[part ? part[1] : 'all'] = e;
+      });
+      var keys = Object.keys(groups).sort(function (a, b) { var A = /ore/.test(a) ? 0 : 1, Bq = /ore/.test(b) ? 0 : 1; return A - Bq || (a < b ? -1 : 1); });
+      var pickB = [], tiles = 0;
+      for (var i = 0; i < keys.length && pickB.length < MOD_IDMAX - MOD_ID0; i++) {
+        var gr = groups[keys[i]], P = gr.parts, side = P.side || P.all || P.front, top = P.top || P.end || side, bot = P.bottom || P.end || top;
+        if (!side) continue; var need = new Set([top, bot, side]).size; if (tiles + need > MOD_TILEMAX - MOD_TILE0) break; tiles += need;
+        pickB.push({ g: gr, f: [top, bot, side] });
+      }
+      // ---- creatures: Bedrock models (.geo.json) with a picture of the same name
+      var pngs = {};
+      list.forEach(function (e) { var m = /\/([^\/]+)\.png$/i.exec(e.name); if (m && !/(shiny|emissive|glow|_e\.png|overlay)/i.test(e.name) && e.usize < 2000000) { var k = m[1].toLowerCase(); if (!pngs[k] || /pokemon|entity|creature|mob/i.test(e.name)) pngs[k] = e; } });
+      var geos = list.filter(function (e) { return /\.geo\.json$/i.test(e.name) && e.usize < 400000; }).map(function (e) { var k = /\/([^\/]+)\.geo\.json$/i.exec(e.name)[1].toLowerCase(); return { e: e, k: k, png: pngs[k] || pngs[k.replace(/_?(male|female|base|model)$/, '')] }; }).filter(function (g) { return g.png; });
+      for (var s = geos.length - 1; s > 0; s--) { var r = Math.floor(Math.random() * (s + 1)), tmp = geos[s]; geos[s] = geos[r]; geos[r] = tmp; } // a different mix each time
+      geos = geos.slice(0, 40);
+      var done = 0, total = pickB.length + geos.length;
+      tell('Fandt ' + pickB.length + ' klodser og ' + geos.length + ' væsner. Henter…');
+      var chain = Promise.resolve();
+      pickB.forEach(function (b) {
+        chain = chain.then(function () {
+          var uniq = [], idx = b.f.map(function (e) { var j = uniq.indexOf(e); if (j < 0) { uniq.push(e); j = uniq.length - 1; } return j; });
+          return Promise.all(uniq.map(function (e) { return zipRead(file, e).then(function (bytes) { return pngToSmall(bytes); }).catch(function () { return null; }); })).then(function (pics) {
+            if (pics.some(function (x) { return !x; })) return;
+            var tex = pics.slice(); // [unique pictures]; top/bottom/side point into them
+            var n = b.g.base;
+            found.blocks.push({ n: prettyName(n), tex: idx.length === 3 && uniq.length === 3 ? [tex[idx[0]], tex[idx[1]], tex[idx[2]]] : (uniq.length === 1 ? [tex[0]] : [tex[idx[0]], tex[idx[1]], tex[idx[2]]]), ore: /ore/.test(n), stone: /(stone|brick|rock|marble|granite|slate|basalt|tile|cobble|deepslate)/.test(n), clear: /(glass|leaves|leaf|ice|web|bars)/.test(n) });
+            if (++done % 5 === 0) tell('Henter… ' + done + ' af ' + total);
+          });
+        });
+      });
+      geos.forEach(function (g) {
+        chain = chain.then(function () {
+          return Promise.all([zipRead(file, g.e).then(function (b) { return JSON.parse(new TextDecoder().decode(b)); }), zipRead(file, g.png).then(pngToURL)]).then(function (r) {
+            if (r[1] && geoBones(r[0])) found.creatures.push({ n: prettyName(g.k.replace(/^\d+_/, '')), geo: r[0], tex: r[1] });
+          }).catch(function () { /* a model we cannot read */ }).then(function () { if (++done % 5 === 0) tell('Henter… ' + done + ' af ' + total); });
+        });
+      });
+      return chain.then(function () { return found; });
+    });
+  }
+
+  /* ---------- Bedrock models: bones with boxes, a picture folded around each box ---------- */
+  function geoBones(geo) { // the bones and picture size, from the new or the old way of writing the file
+    try {
+      var g = geo['minecraft:geometry'] ? geo['minecraft:geometry'][0] : null;
+      if (g) return { bones: g.bones || [], tw: (g.description || {}).texture_width || 64, th: (g.description || {}).texture_height || 64 };
+      for (var k in geo) if (/^geometry\./.test(k) && geo[k].bones) return { bones: geo[k].bones, tw: geo[k].texturewidth || 64, th: geo[k].textureheight || 64 };
+    } catch (e) { /* not a model */ }
+    return null;
+  }
+  var modTex = {};
+  function modTexture(i) { if (!modTex[i]) { var t = new THREE.TextureLoader().load(MOD.creatures[i].tex); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; modTex[i] = t; } return modTex[i]; }
+  function boxUV(geo3, c, tw, th, w, h, d) {
+    var uv = geo3.attributes.uv, u = c.uv;
+    // three's box sides in order: +x, -x, +y, -y, +z, -z  (the model is mirrored in x, so +x is the model's west)
+    var names = ['west', 'east', 'up', 'down', 'south', 'north'], rects;
+    if (Array.isArray(u)) { var U = u[0], V = u[1]; rects = { east: [U, V + d, d, h], north: [U + d, V + d, w, h], west: [U + d + w, V + d, d, h], south: [U + 2 * d + w, V + d, w, h], up: [U + d, V, w, d], down: [U + d + w, V, w, d] }; }
+    else if (u && typeof u === 'object') { rects = {}; names.forEach(function (n) { var f = u[n]; if (f && f.uv) rects[n] = [f.uv[0], f.uv[1], (f.uv_size || [0, 0])[0], (f.uv_size || [0, 0])[1]]; }); }
+    else return;
+    for (var f = 0; f < 6; f++) {
+      var r = rects[names[f]]; if (!r) continue;
+      for (var k = 0; k < 4; k++) { var i = f * 4 + k, a = uv.getX(i), b = uv.getY(i); uv.setXY(i, (r[0] + a * r[2]) / tw, 1 - (r[1] + (1 - b) * r[3]) / th); }
+    }
+    uv.needsUpdate = true;
+  }
+  function deg(v) { return (v || 0) * Math.PI / 180; }
+  function buildModCreature(i) {
+    var C = MOD.creatures[i], G = geoBones(C.geo), root = new THREE.Group(), inner = new THREE.Group(), bones = {}, mat = new THREE.MeshBasicMaterial({ map: modTexture(i), transparent: true, alphaTest: 0.4, side: THREE.DoubleSide });
+    root.add(inner);
+    G.bones.forEach(function (b) { bones[b.name] = { g: new THREE.Group(), b: b }; });
+    G.bones.forEach(function (b) {
+      var me = bones[b.name], par = b.parent && bones[b.parent] ? bones[b.parent] : null, pv = b.pivot || [0, 0, 0], ppv = par ? (par.b.pivot || [0, 0, 0]) : [0, 0, 0];
+      me.g.position.set(-(pv[0] - ppv[0]) / 16, (pv[1] - ppv[1]) / 16, (pv[2] - ppv[2]) / 16);
+      if (b.rotation) me.g.rotation.set(-deg(b.rotation[0]), -deg(b.rotation[1]), deg(b.rotation[2]), 'ZYX');
+      (par ? par.g : inner).add(me.g);
+      (b.cubes || []).forEach(function (c) {
+        var s = c.size || [1, 1, 1], o = c.origin || [0, 0, 0], inf = (c.inflate || 0) * 2, w = Math.max(0.01, s[0]), h = Math.max(0.01, s[1]), d = Math.max(0.01, s[2]);
+        var geo3 = new THREE.BoxGeometry((w + inf) / 16, (h + inf) / 16, (d + inf) / 16); boxUV(geo3, c, G.tw, G.th, s[0], s[1], s[2]);
+        var mesh = new THREE.Mesh(geo3, mat); mesh.userData.base = new THREE.Color(0xffffff);
+        var cx = o[0] + s[0] / 2, cy = o[1] + s[1] / 2, cz = o[2] + s[2] / 2;
+        if (c.rotation) { var cp = c.pivot || [cx, cy, cz], holder = new THREE.Group(); holder.position.set(-(cp[0] - pv[0]) / 16, (cp[1] - pv[1]) / 16, (cp[2] - pv[2]) / 16); holder.rotation.set(-deg(c.rotation[0]), -deg(c.rotation[1]), deg(c.rotation[2]), 'ZYX'); mesh.position.set(-(cx - cp[0]) / 16, (cy - cp[1]) / 16, (cz - cp[2]) / 16); holder.add(mesh); me.g.add(holder); }
+        else { mesh.position.set(-(cx - pv[0]) / 16, (cy - pv[1]) / 16, (cz - pv[2]) / 16); me.g.add(mesh); }
+      });
+    });
+    // stand on the ground, and be a friendly size (about one block tall, never huge)
+    inner.position.set(0, 0, 0); root.updateMatrixWorld(true);
+    var box3 = new THREE.Box3().setFromObject(inner), size = box3.getSize(new THREE.Vector3()), k = size.y > 0 ? Math.min(1.6, Math.max(0.6, size.y)) / size.y : 1;
+    inner.scale.setScalar(k); inner.position.set(-(box3.min.x + box3.max.x) / 2 * k, -box3.min.y * k, -(box3.min.z + box3.max.z) / 2 * k);
+    inner.userData.y0 = inner.position.y; root.userData.size = [Math.max(0.2, Math.min(0.6, Math.max(size.x, size.z) * k / 2)), size.y * k];
+    return root;
+  }
+  function applyModCreatures(list) {
+    MOD.creatures = list || []; modTex = {};
+    for (var k in KINDS) if (KINDS[k].modi != null) delete KINDS[k];
+    MOD.creatures.forEach(function (C, i) {
+      var sz = [0.4, 1]; try { var tmp = buildModCreature(i); sz = tmp.userData.size; tmp.traverse(function (o) { if (o.isMesh) o.geometry.dispose(); }); } catch (e) { return; }
+      KINDS['mod:' + i] = { n: C.n, hp: 999, sp: 1.6, w: sz[0], h: Math.max(0.4, sz[1]), passive: true, friend: true, modi: i, col: 0xffffff, drop: [] };
+    });
+  }
+  idb('readonly', function (st) { return st.get('creatures'); }).then(function (list) { if (list && list.length) applyModCreatures(list); }).catch(function () { /* no database */ });
+
+  /* ---------- the mod pack window ---------- */
+  function openModPanel(msg) {
+    ovKind = 'mod'; paused = true; releaseAll();
+    var ov = $('#ov'), nb = MOD.blocks.length, nc = Object.keys(KINDS).filter(function (k) { return KINDS[k].modi != null; }).length;
+    ov.innerHTML = '<div class="panel"><h2>🧩 Mod-pakke <button class="pbtn" id="oX">✕</button></h2>' +
+      '<p>Vælg en .jar- eller .zip-fil fra en mod. Spillet læser billeder af klodser og væsner fra den. Filen bliver på din telefon og sendes ikke nogen steder hen. Koden i en mod kan ikke køre i dette spil, så kun billeder og modeller bliver brugt.</p>' +
+      (MOD.name ? '<p><b>' + MOD.name.replace(/[<>&]/g, '') + '</b>: ' + nb + ' klodser og ' + nc + ' væsner er med i spillet.</p>' : '') +
+      '<p id="modMsg">' + (msg || '') + '</p>' +
+      '<div class="row"><label class="pbtn g" id="modPick">📂 Vælg .jar-fil<input type="file" id="modFile" accept=".jar,.zip,application/java-archive,application/zip" hidden></label>' + (MOD.name ? '<button class="pbtn r" id="modDel">🗑️ Fjern mod-pakke</button>' : '') + '</div>' +
+      (nb ? '<h3>Mod-klodser</h3><p>Tryk på en klods for at lægge den i pladsen forneden. Du har uendeligt mange.</p><div class="grid">' + MOD.blocks.map(function (id) { return '<div class="it" data-mb="' + id + '" style="background-image:url(' + ICONS[id] + ')"></div>'; }).join('') + '</div>' : '') + '</div>';
+    ov.hidden = false; tap($('#oX'), closeOv);
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-mb]'), function (el) { tap(el, function () { var id = +el.dataset.mb, j = hot.indexOf(id); if (j >= 0) hot[j] = hot[selected]; hot[selected] = id; drawHotbar(); say(B[id].n); }); });
+    if ($('#modDel')) tap($('#modDel'), function () { try { localStorage.removeItem(MOD_KEY); } catch (e) { /* ignore */ } idb('readwrite', function (st) { return st.delete('creatures'); }).catch(function () {}).then(function () { saveNow(); location.reload(); }); });
+    $('#modFile').addEventListener('change', function () {
+      var f = this.files && this.files[0]; if (!f) return;
+      var tell = function (t) { var el = $('#modMsg'); if (el) el.textContent = t; };
+      readModPack(f, tell).then(function (found) {
+        if (!found.blocks.length && !found.creatures.length) { tell('Der var ingen klodser eller væsner, spillet kan bruge, i den fil.'); return; }
+        tell('Gemmer…');
+        var name = f.name.replace(/\.(jar|zip)$/i, '');
+        try { localStorage.setItem(MOD_KEY, JSON.stringify({ name: name, blocks: found.blocks })); } catch (e) { tell('Der var ikke plads til alle klodserne på telefonen.'); return; }
+        return idb('readwrite', function (st) { return st.put(found.creatures, 'creatures'); }).catch(function () {}).then(function () {
+          MOD.name = name; applyModBlocks(found.blocks); applyModCreatures(found.creatures); clearMonsters(true); saveSoon();
+          openModPanel('✅ Færdig! ' + found.blocks.length + ' klodser og ' + found.creatures.length + ' væsner er nu med. Gå på opdagelse!');
+        });
+      }).catch(function (e) { tell('Kunne ikke læse filen: ' + (e && e.message ? e.message : e)); });
+    });
+  }
+
   var saveTimer = 0;
   function saveNow() { if (wiping) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify({ seed: seed, edits: edits, p: [player.x, player.y, player.z, player.yaw, player.pitch], hp: player.hp, inv: inv, hot: hot, sel: selected, wear: wear, gear: gear, day: dayT, cr: creative, pe: peaceful, sp: spawnPt, kid: kid, mi: mIndex, st: stars, sn: siteNo, fl: flags, wp: waypoints, base: base, mb: mission && mission.before, mu: musicOn, so: soundOn, vr: RENDER })); } catch (e) { /* storage full or off */ } }
   function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 700); }
@@ -1413,7 +1657,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   requestAnimationFrame(frame);
 
   // for automated checks
-  window.__KLODS__ = { get mission() { return mission; }, get mIndex() { return mIndex; }, get stars() { return stars; }, get building() { return !!buildJob; }, get waypoints() { return waypoints; }, get spawn() { return spawnPt; }, get kid() { return kid; }, missionAt: missionAt, TELE: TELE, gear: gear, bestTool: bestTool, handId: handId, betterGear: betterGear, SHOVEL: SHOVEL, AXE: AXE, get goals() { return goals; }, glows: glows, breakTime: breakTime, get misText() { return misText; }, biomeAt: biomeAt, colHeight: colHeight, KINDS: KINDS, openTrade: openTrade, MEAT: MEAT, WH: WH, setView: setView, get view() { return RENDER; }, topOf: topOf, setKid: function (k) { kid = k; }, openMap: openMap, needRows: needRows,
+  window.__KLODS__ = { get mission() { return mission; }, get mIndex() { return mIndex; }, get stars() { return stars; }, get building() { return !!buildJob; }, get waypoints() { return waypoints; }, get spawn() { return spawnPt; }, get kid() { return kid; }, missionAt: missionAt, TELE: TELE, get paused() { return paused; }, get aimMon() { return aimMon; }, MOD: MOD, B: B, readModPack: readModPack, openModPanel: openModPanel, gear: gear, bestTool: bestTool, handId: handId, betterGear: betterGear, SHOVEL: SHOVEL, AXE: AXE, get goals() { return goals; }, glows: glows, breakTime: breakTime, get misText() { return misText; }, biomeAt: biomeAt, colHeight: colHeight, KINDS: KINDS, openTrade: openTrade, MEAT: MEAT, WH: WH, setView: setView, get view() { return RENDER; }, topOf: topOf, setKid: function (k) { kid = k; }, openMap: openMap, needRows: needRows,
     player: player, getBlock: getBlock, setBlock: setBlock, target: function () { return aim; }, hits: function (x, y, z) { return hits(player, x, y, z); }, give: give, count: count, craft: craft, RECIPES: RECIPES,
     spawnMonster: spawnMonster, monsters: monsters, setDay: function (t) { dayT = t; }, light: function () { return dayLight; }, lightAt: lightAt, chunks: chunks, hot: hot, wear: wear, useFromBag: useFromBag, hurt: hurt, armorPoints: armorPoints, save: saveNow,
     ids: { COAL: COAL, LOG: LOG, PLANKS: PLANKS, STICK: STICK, BENCH: BENCH, TORCH: TORCH, COBBLE: COBBLE, IRON: IRON, PICK: PICK, SWORD: SWORD, HELM: HELM, CHEST: CHEST, DIRT: DIRT }, setMode: function (c, p) { creative = c; peaceful = p; drawHotbar(); } };
