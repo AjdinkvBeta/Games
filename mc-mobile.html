@@ -948,6 +948,19 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   });
   function lookEnd(e) { if (e.pointerId === look.id) look.id = null; }
   canvas.addEventListener('pointerup', lookEnd); canvas.addEventListener('pointercancel', lookEnd);
+  // never let the stick stay pressed: a finger lifted anywhere, a lost touch, or the game going to the background all let go
+  function stopStick() { move.id = null; move.x = move.y = 0; knob.style.transform = ''; }
+  stick.addEventListener('lostpointercapture', stickEnd);
+  window.addEventListener('pointerup', function (e) { stickEnd(e); lookEnd(e); }, true);
+  window.addEventListener('pointercancel', function (e) { stickEnd(e); lookEnd(e); }, true);
+  function touchCheck(e) { // when no finger is on the stick any more, it lets go
+    if (move.id === null) return; var r = stick.getBoundingClientRect(), pad = 70, on = false;
+    for (var i = 0; i < e.touches.length; i++) { var t = e.touches[i]; if (t.clientX > r.left - pad && t.clientX < r.right + pad && t.clientY > r.top - pad && t.clientY < r.bottom + pad) on = true; }
+    if (!on) stopStick(); if (!e.touches.length) look.id = null;
+  }
+  document.addEventListener('touchend', touchCheck, true); document.addEventListener('touchcancel', touchCheck, true);
+  window.addEventListener('blur', releaseAll); document.addEventListener('visibilitychange', function () { if (document.hidden) releaseAll(); });
+
   var BTN_RESET = [];
   function button(id, down, up, repeatMs) {
     var el = $(id), pid = null, timer = 0;
