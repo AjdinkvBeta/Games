@@ -88,9 +88,12 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 #msg{bottom:calc(env(safe-area-inset-bottom) + 210px)!important;font-size:13px}
 #cross{width:20px;height:20px;margin:-10px}#cross::before{left:9px;top:2px;height:16px}#cross::after{left:2px;top:9px;width:16px}
 #rot{display:none;position:fixed;inset:0;z-index:30;background:#10141c;color:#fff;font:700 20px system-ui,sans-serif;align-items:center;justify-content:center;text-align:center;padding:20px}
-@media (orientation:landscape) and (pointer:coarse){#rot{display:flex}}
-.me .grid{grid-template-columns:repeat(4,1fr)!important}.it.gs{border-style:dashed}.it small{position:absolute;left:0;right:0;bottom:-1px;text-align:center;font:600 8px system-ui,sans-serif;color:#aab}
+@media (orientation:portrait) and (pointer:coarse){#rot{display:flex}}
+.me .grid{grid-template-columns:repeat(4,44px)!important;gap:4px}.me .grid .it{width:44px}.me img{width:70px}
+@media (orientation:landscape){.panel{width:min(100%,680px);padding:9px 12px;gap:5px}.panel h2{font-size:16px}.bagp{display:none}.panel h3{margin-top:2px}.grid{grid-template-columns:repeat(auto-fill,minmax(42px,1fr))}.me{gap:14px}}.it.gs{border-style:dashed}.it small{position:absolute;left:0;right:0;bottom:-1px;text-align:center;font:600 8px system-ui,sans-serif;color:#aab}
 #top button{position:relative}#top button::after{content:'';position:absolute;inset:-7px}
+#top{z-index:14!important}#mis{z-index:14}
+#ov{padding-top:calc(env(safe-area-inset-top) + 54px)!important;padding-bottom:calc(env(safe-area-inset-bottom) + 58px)!important}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:#7ec0ee;color:#fff;font:700 22px system-ui,sans-serif;z-index:20;text-align:center;padding:20px}
 </style>
 </head>
@@ -108,7 +111,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 </div>
 <div id="hotwrap"><div id="stats"><span id="hearts"></span><span id="armor"></span><span id="clock"></span></div><div id="hotbar"></div></div>
 <div id="ov" hidden></div>
-<div id="rot">📱 Drej telefonen, så den står op</div>
+<div id="rot">📱 Drej telefonen, så den ligger ned</div>
 <div id="load">Bygger verden…</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -559,7 +562,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     ids.sort(function (a, b) { return a - b; });
     var h = '<div class="panel"><h2>🎒 Taske <button class="pbtn" id="oX">✕</button></h2>';
     h += '<h3>Det er dig</h3><div class="me"><img src="' + charPic() + '" alt=""><div class="grid">' + ['head', 'chest', 'legs', 'feet'].map(function (s) { var id = wear[s]; return '<div class="it" data-w="' + s + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"></div>'; }).join('') + ['pick', 'axe', 'shovel', 'sword'].map(function (k) { var id = gear[k]; return '<div class="it gs" data-g="' + k + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"><small>' + GEAR_NAME[k] + '</small></div>'; }).join('') + '</div></div>';
-    h += '<h3>Dine ting</h3><p>Tryk på værktøj, våben og rustning for at tage det på. Så bruges det rigtige af sig selv. Klodser lægges i pladsen forneden, og mad spiser du.</p><div class="grid">' + (ids.length ? ids.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"><em>' + (creative ? '' : inv[id]) + '</em></div>'; }).join('') : '') + '</div>' + (ids.length ? '' : '<p>Tasken er tom. Hak nogle klodser!</p>');
+    h += '<h3>Dine ting</h3><p class="bagp">Tryk på værktøj, våben og rustning for at tage det på. Så bruges det rigtige af sig selv. Klodser lægges i pladsen forneden, og mad spiser du.</p><div class="grid">' + (ids.length ? ids.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"><em>' + (creative ? '' : inv[id]) + '</em></div>'; }).join('') : '') + '</div>' + (ids.length ? '' : '<p>Tasken er tom. Hak nogle klodser!</p>');
     h += '<h3>Det kan du lave</h3>';
     var order = RECIPES.map(function (r, i) { return i; }).sort(function (a, b) { return (canMake(RECIPES[b]) && stationOk(RECIPES[b]) ? 1 : 0) - (canMake(RECIPES[a]) && stationOk(RECIPES[a]) ? 1 : 0); });
     h += order.map(function (i) {
