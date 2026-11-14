@@ -94,6 +94,12 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 #top button{position:relative}#top button::after{content:'';position:absolute;inset:-7px}
 #top{z-index:14!important}#mis{z-index:14}
 #ov{padding-top:calc(env(safe-area-inset-top) + 54px)!important;padding-bottom:calc(env(safe-area-inset-bottom) + 58px)!important}
+#bat{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 54px);z-index:14;display:flex;gap:8px}#bat[hidden]{display:none}#bat .pbtn{padding:10px 16px;font-size:15px}
+.hpb{height:6px;border-radius:3px;background:#0006;overflow:hidden;margin-top:3px}.hpb i{display:block;height:100%}
+.starters .st{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px}.starters .st img{width:76px;height:76px}.starters .st small{font-size:11px;color:#dde}
+.dexf{display:flex;gap:6px;justify-content:center;align-items:flex-end}.dexf div{display:flex;flex-direction:column;align-items:center;font:600 12px system-ui,sans-serif}.dexf img{width:88px;height:88px}.dexf small{color:#ffd24a}
+.tale{font:italic 500 14px/1.4 system-ui,sans-serif!important;color:#fff!important}
+.grid.dex .it{background-color:#0003}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:#7ec0ee;color:#fff;font:700 22px system-ui,sans-serif;z-index:20;text-align:center;padding:20px}
 </style>
 </head>
@@ -102,6 +108,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 <div id="tint"></div><div id="hurt"></div>
 <div id="cross"></div><div id="prog"><i></i></div>
 <div id="top"><button id="bBag" aria-label="taske">🎒</button><button id="bMap" aria-label="kort">🗺️</button><button id="bMenu" aria-label="menu">⚙️</button><div id="mis" hidden></div></div>
+<div id="bat" hidden></div>
 <div id="msg"></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="btns">
@@ -125,7 +132,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
      ===================================================================== */
   var AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, LOG = 4, LEAVES = 5, SAND = 6, BEDROCK = 7, WATER = 8, PLANKS = 9, COBBLE = 10,
     COAL_ORE = 11, IRON_ORE = 12, GOLD_ORE = 13, CRYS_ORE = 14, GLASS = 15, TORCH = 17, BENCH = 18, FURNACE = 19, BED = 20, SNOW = 21, TELE = 22, CACTUS = 23, ICE = 24, LAVA = 25, PINE = 26, DRYGRASS = 27, REDROCK = 28;
-  var STICK = 100, COAL = 101, IRON = 102, GOLD = 103, CRYSTAL = 104, APPLE = 105, MEAT = 106, WOOL = 107;
+  var STICK = 100, COAL = 101, IRON = 102, GOLD = 103, CRYSTAL = 104, APPLE = 105, MEAT = 106, WOOL = 107, BALL = 108;
   var PICK = 110, AXE = 120, SWORD = 130, HELM = 140, CHEST = 150, LEGS = 160, BOOTS = 170, SHOVEL = 180; // + tier
   // block: n name, t pictures [top, bottom, side], h seconds to break by hand, tool that helps, tier of pickaxe needed, d what it drops
   var B = {};
@@ -150,7 +157,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   var ARMOR_PTS = { 140: [2, 2, 3], 150: [6, 5, 8], 160: [5, 3, 6], 170: [2, 1, 3] }, ARMOR_SLOT = { 140: 'head', 150: 'chest', 160: 'legs', 170: 'feet' };
   function itemName(id) {
     if (B[id]) return B[id].n;
-    if (id === STICK) return 'Pind'; if (id === COAL) return 'Kul'; if (id === IRON) return 'Jernbarre'; if (id === GOLD) return 'Guldbarre'; if (id === CRYSTAL) return 'Krystal'; if (id === APPLE) return 'Æble'; if (id === MEAT) return 'Kød'; if (id === WOOL) return 'Uld';
+    if (id === STICK) return 'Pind'; if (id === COAL) return 'Kul'; if (id === IRON) return 'Jernbarre'; if (id === GOLD) return 'Guldbarre'; if (id === CRYSTAL) return 'Krystal'; if (id === APPLE) return 'Æble'; if (id === MEAT) return 'Kød'; if (id === BALL) return 'Fangstkugle'; if (id === WOOL) return 'Uld';
     var base = Math.floor(id / 10) * 10, t = id % 10;
     if (base === PICK) return TIER[t] + 'hakke'; if (base === AXE) return TIER[t] + 'økse'; if (base === SWORD) return TIER[t] + 'sværd'; if (base === SHOVEL) return TIER[t] + 'skovl';
     if (base === HELM) return ATIER[t] + 'hjelm'; if (base === CHEST) return ATIER[t] + 'brynje'; if (base === LEGS) return ATIER[t] + 'bukser'; if (base === BOOTS) return ATIER[t] + 'støvler';
@@ -161,7 +168,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   /* recipes: what you get, what it costs, and where it is made ('' anywhere, bench, furnace) */
   var RECIPES = [
     { out: [PLANKS, 4], cost: [[LOG, 1]], st: '' }, { out: [STICK, 4], cost: [[PLANKS, 2]], st: '' }, { out: [BENCH, 1], cost: [[PLANKS, 4]], st: '' },
-    { out: [TORCH, 4], cost: [[COAL, 1], [STICK, 1]], st: '' }, { out: [TELE, 1], cost: [[COBBLE, 4], [COAL, 1]], st: '' }, { out: [FURNACE, 1], cost: [[COBBLE, 8]], st: 'bench' }, { out: [BED, 1], cost: [[PLANKS, 3], [LEAVES, 3]], st: 'bench' }
+    { out: [TORCH, 4], cost: [[COAL, 1], [STICK, 1]], st: '' }, { out: [TELE, 1], cost: [[COBBLE, 4], [COAL, 1]], st: '' }, { out: [BALL, 4], cost: [[COBBLE, 1], [PLANKS, 1]], st: '' }, { out: [FURNACE, 1], cost: [[COBBLE, 8]], st: 'bench' }, { out: [BED, 1], cost: [[PLANKS, 3], [LEAVES, 3]], st: 'bench' }
   ];
   TIER_MAT.forEach(function (m, t) {
     RECIPES.push({ out: [SHOVEL + t, 1], cost: [[m, 1], [STICK, 2]], st: '' }, { out: [PICK + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [AXE + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [SWORD + t, 1], cost: [[m, 2], [STICK, 1]], st: 'bench' });
@@ -250,6 +257,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     ICONS[IRON] = art(bar, { m: '#dcdce0', w: '#ffffff', d: '#9a9aa2' }); ICONS[GOLD] = art(bar, { m: '#f0c830', w: '#fff4b0', d: '#b08a18' });
     ICONS[CRYSTAL] = art(['...cc...', '..cwcc..', '.cwcccc.', 'ccccccdc', '.ccccdc.', '..ccdc..', '...cc...'], { c: '#50e0e0', w: '#e0ffff', d: '#2aa8b0' });
     ICONS[MEAT] = art(['..rrrrr...', '.rrpprrr..', 'rrpppprrr.', 'rrppprrrw.', '.rrrrrrww.', '..rrrr.ww.', '........ww'], { r: '#c8503a', p: '#f0907a', w: '#f4f0e0' });
+    ICONS[BALL] = art(['...gggg...', '..gGgggg..', '.gGgggdgg.', 'yyyyyyyyyy', 'yyyywwyyyy', '.gggggdgg.', '..gggdgg..', '...gggg...'], { g: '#3aa85a', G: '#8ae0a0', d: '#2a7040', y: '#f0c830', w: '#ffffff' });
     ICONS[WOOL] = art(['.wwwwww.', 'wwgwwwww', 'wwwwwgww', 'wgwwwwww', 'wwwwgwww', '.wwwwww.'], { w: '#f4f4f0', g: '#d0d0cc' });
     ICONS[APPLE] = art(['....gh..', '...gh...', '.rrrrrr.', 'rrwrrrrr', 'rrrrrrrr', 'rrrrrrrr', '.rrrrrr.', '..rrrr..'], { r: '#e03a3a', w: '#ff9a9a', g: '#4aa83a', h: wood });
   })();
@@ -562,6 +570,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     ids.sort(function (a, b) { return a - b; });
     var h = '<div class="panel"><h2>🎒 Taske <button class="pbtn" id="oX">✕</button></h2>';
     h += '<h3>Det er dig</h3><div class="me"><img src="' + charPic() + '" alt=""><div class="grid">' + ['head', 'chest', 'legs', 'feet'].map(function (s) { var id = wear[s]; return '<div class="it" data-w="' + s + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"></div>'; }).join('') + ['pick', 'axe', 'shovel', 'sword'].map(function (k) { var id = gear[k]; return '<div class="it gs" data-g="' + k + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"><small>' + GEAR_NAME[k] + '</small></div>'; }).join('') + '</div></div>';
+    h += crBagHtml();
     h += '<h3>Dine ting</h3><p class="bagp">Tryk på værktøj, våben og rustning for at tage det på. Så bruges det rigtige af sig selv. Klodser lægges i pladsen forneden, og mad spiser du.</p><div class="grid">' + (ids.length ? ids.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"><em>' + (creative ? '' : inv[id]) + '</em></div>'; }).join('') : '') + '</div>' + (ids.length ? '' : '<p>Tasken er tom. Hak nogle klodser!</p>');
     if (MOD.blocks.length) h += '<h3>🧩 Mod-klodser</h3><div class="grid">' + MOD.blocks.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"></div>'; }).join('') + '</div>';
     h += '<h3>Det kan du lave</h3>';
@@ -575,6 +584,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     tap($('#oX'), closeOv);
     Array.prototype.forEach.call(ov.querySelectorAll('[data-i]'), function (el) { tap(el, function () { useFromBag(+el.dataset.i); }); });
     Array.prototype.forEach.call(ov.querySelectorAll('[data-w]'), function (el) { tap(el, function () { var s = el.dataset.w; if (wear[s]) { give(wear[s], 1); wear[s] = 0; drawHotbar(); openBag(); } }); });
+    crBagWire(ov);
     Array.prototype.forEach.call(ov.querySelectorAll('[data-g]'), function (el) { tap(el, function () { var k = el.dataset.g; if (gear[k]) { var id = gear[k]; gear[k] = 0; give(id, 1); drawHotbar(); openBag(); } }); });
     Array.prototype.forEach.call(ov.querySelectorAll('[data-r]'), function (el) { tap(el, function () { var sc = ov.firstChild.scrollTop; craft(+el.dataset.r); openBag(); $('#ov').firstChild.scrollTop = sc; }); });
   }
@@ -682,6 +692,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   function placeBlock() {
     if (paused) return;
     if (aimMon && KINDS[aimMon.kind].trader) { openTrade(aimMon); return; }
+    if (aimMon && KINDS[aimMon.kind].cr != null) { say(aimMon.owned ? '💛 ' + KINDS[aimMon.kind].n + ' er din ven' : 'Tryk ⛏️ Hak for at kæmpe mod ' + KINDS[aimMon.kind].n); return; }
     if (aimMon && KINDS[aimMon.kind].friend) { aimMon.pet = !aimMon.pet; say(aimMon.pet ? '💛 ' + KINDS[aimMon.kind].n + ' følger nu med dig!' : KINDS[aimMon.kind].n + ' bliver her'); tone(660, 0.12, 0.1, 'triangle', 990); return; }
     if (!aim) { if ((held() === APPLE || held() === MEAT) && !creative) eat(held()); return; }
     // using the thing you point at
@@ -700,7 +711,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   function sleep() {
     if (aim) spawnPt = [aim.x + 0.5, aim.y + 1.05, aim.z + 0.5];
     if (sunUp > 0.1) { say('Du kan kun sove om natten 🌙'); return; }
-    dayT = 0.02; clearMonsters(); player.hp = 20; drawHotbar(); say('Godmorgen! ☀️'); saveSoon();
+    dayT = 0.02; clearMonsters(); player.hp = 20; crTeam.forEach(function (c) { c.hp = maxHp(c); }); drawHotbar(); say('Godmorgen! ☀️ Dine væsner er friske.'); syncLead(); saveSoon();
   }
   function hurt(d, fromX, fromZ) {
     if (creative || d <= 0) return;
@@ -858,6 +869,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     if (!chunkAt(x >> 4, z >> 4)) return;
     var y = topOf(x, z) + 1, below = getBlock(x, y - 1, z);
     if (!SOLID[below] || below === LEAVES || below === PINE || below === CACTUS || below === PLANKS || below === COBBLE || getBlock(x, y, z) !== AIR || getBlock(x, y + 1, z) !== AIR) return;
+    if (Math.random() < 0.6 && trySpawnWild(x, z)) return; // more often one of the creatures
     var list = BIOME_ANIMALS[biomeAt(x, z)], traders = 0; for (var i = 0; i < monsters.length; i++) if (monsters[i].kind === 'trader') traders++;
     if (traders < 2 && Math.random() < 0.07) { spawnMonster('trader', x + 0.5, y + 0.02, z + 0.5); return; }
     var mods = Object.keys(KINDS).filter(function (k) { return KINDS[k].modi != null; });
@@ -875,6 +887,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     var K = KINDS[m.kind];
     if (K.trader) { say('Købmanden vil hellere bytte. Sigt på ham, og tryk 🧱 Byg'); return; }
     if (K.friend) { say(K.n + ' vil hellere være venner. Sigt, og tryk 🧱 Byg'); return; }
+    if (K.cr != null) { if (m.owned) { say('💛 ' + K.n + ' er din ven'); return; } if (m.wild && !battle) startBattle(m); return; }
     var tool = toolInfo('sword'); if (!tool.kind) tool = toolInfo(); var dmg = tool.kind === 'sword' ? SWORD_DMG[tool.t] : tool.kind === 'axe' ? 3 : tool.kind === 'pick' ? 2 : 1;
     if (creative) dmg = 99;
     m.hp -= dmg; m.flash = 0.2; m.fleeT = 4; var dx = m.x - player.x, dz = m.z - player.z, l = Math.hypot(dx, dz) || 1; m.vx = dx / l * 7; m.vz = dz / l * 7; m.vy = 4.5; m.ground = false;
@@ -901,9 +914,10 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   }
   function updateMonsters(dt) {
     if (!peaceful && !creative && (spawnT -= dt) <= 0) { spawnT = 1.6; if (countKind(false) < MAX_MON) trySpawn(); }
-    if ((animalT -= dt) <= 0) { animalT = 1.5; if (countKind(true) < 10 && sunUp > 0.2) trySpawnAnimal(); homeTrader(); }
+    if ((animalT -= dt) <= 0) { animalT = 1.5; if (countKind(true) < 14 && (sunUp > 0.2 || Math.random() < 0.5)) trySpawnAnimal(); homeTrader(); }
     for (var i = monsters.length - 1; i >= 0; i--) {
       var m = monsters[i], K = KINDS[m.kind], dx = player.x - m.x, dz = player.z - m.z, dist = Math.hypot(dx, dz), dy = player.y - m.y;
+      if (m.inBattle) continue; // the fight moves the fighters itself
       if ((m.pet ? dist > 200 : dist > (K.passive ? 72 : 60)) || m.y < -10 || !chunkAt(Math.floor(m.x) >> 4, Math.floor(m.z) >> 4)) { removeMonster(m); continue; }
       m.t += dt; m.cool -= dt; m.flash -= dt; m.fleeT -= dt;
       var lit = lightAt(Math.floor(m.x), Math.floor(m.y + 0.5), Math.floor(m.z));
@@ -1039,6 +1053,9 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     { type: 'craft', title: 'Lav en træskovl', want: [[SHOVEL, 1]] },
     { type: 'craft', title: 'Lav en træøkse', want: [[AXE, 1]] },
     { type: 'collect', title: 'Hak sten', want: [[COBBLE, 12]] },
+    { type: 'starter', title: 'Vælg din første væsen-ven' },
+    { type: 'craft', title: 'Lav fangstkugler', want: [[BALL, 4]] },
+    { type: 'catch', title: 'Fang et vildt væsen', n: 1 },
     { type: 'craft', title: 'Lav en stenhakke', want: [[PICK + 1, 1]] },
     { type: 'craft', title: 'Lav et stensværd', want: [[SWORD + 1, 1]] },
     { type: 'build', title: 'Byg et værksted', build: 'workshop', want: [[COBBLE, 20], [PLANKS, 8]] },
@@ -1062,6 +1079,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   function missionAt(n) {
     if (n < CHAIN.length) return CHAIN[n];
     var k = n - CHAIN.length;
+    if (k % 4 === 3) return { type: 'catch', title: 'Fang ' + (2 + Math.floor(k / 20)) + ' væsner', n: 2 + Math.floor(k / 20), want: [[BALL, 2 + Math.floor(k / 20)]] };
     if (k % 2 === 0 && EXTRA[k / 2]) return { type: 'craft', title: 'Lav ' + itemName(EXTRA[k / 2]).toLowerCase(), want: [[EXTRA[k / 2], 1]] };
     var K = KINDS_B[k % KINDS_B.length], round = Math.floor(k / KINDS_B.length), mul = Math.min(3, 1 + round * 0.25);
     return { type: 'build', title: 'Byg ' + K[1] + (round ? ' nr. ' + (round + 1) : ''), build: K[0], want: K[2].map(function (w) { return [w[0], Math.ceil(w[1] * mul)]; }) };
@@ -1076,6 +1094,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   function setMission(newSite) {
     mission = Object.assign({}, missionAt(mIndex));
     if (mission.type === 'build') { if (newSite) siteNo++; mission.site = sitePos(Math.max(1, siteNo)); }
+    if (mission.type === 'catch') { if (flags.catchFor !== mIndex) { flags.catchFor = mIndex; flags.c0 = caughtTotal; } mission.c0 = flags.c0; }
     if (mission.type === 'place') mission.before = mission.before != null ? mission.before : waypoints.length;
     goal = null; findT = 0; lastMis = '';
   }
@@ -1163,6 +1182,24 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     var m = mission, rows = needRows(m), i, html = '<b>⭐' + stars + '</b>', guide = '', arrow = '', hint = null, tgt = null, wantTool = 0, keepGlow = false;
     hintRecipe = -1;
     if (buildJob) { guide = '🔨 Bygger… se bare!'; }
+    else if (m.type === 'starter') {
+      if (crTeam.length || crBox.length) { completeMission(); return; }
+      html += '<span class="chip">🐾 0/1</span>'; guide = 'Åbn tasken 🎒 og vælg din første væsen-ven';
+      hint = ovKind === 'bag' ? $('#ov .st') : $('#bBag');
+    }
+    else if (m.type === 'catch') {
+      var got = caughtTotal - (m.c0 || 0);
+      if (got >= m.n) { completeMission(); return; }
+      html += '<span class="chip">🐾 ' + got + '/' + m.n + '</span>' + chip(BALL, count(BALL), count(BALL) > 0);
+      if (!crTeam.length) { guide = 'Vælg først en væsen-ven i tasken 🎒'; hint = $('#bBag'); }
+      else if (battle) { guide = battle.beaten ? 'Den er besejret! Tryk 🟢 Fang' : 'Kampen kører! Gå rundt om arenaen og se med 👀'; if (battle.beaten) hint = $('#bCatch'); }
+      else if (count(BALL) < 1) { var rb = recipeFor(BALL); if (canMake(RECIPES[rb])) hintRecipe = rb; guide = 'Lav fangstkugler i tasken (1 brosten + 1 planke)'; }
+      else {
+        var near = null, nd = 1e9; monsters.forEach(function (q) { if (q.wild && !q.inBattle) { var d = Math.hypot(q.x - player.x, q.z - player.z); if (d < nd) { nd = d; near = q; } } });
+        guide = near ? 'Sigt på ' + KINDS[near.kind].n + ' og tryk ⛏️ Hak for at kæmpe' : 'Gå på opdagelse og find et vildt væsen 🐾'; if (near) arrow = arrowTo(near.x, near.z);
+        if (near && !flags.fought) hint = $('#bBreak');
+      }
+    }
     else if (m.type === 'place') {
       if (waypoints.length > m.before) { completeMission(); return; }
       html += chip(m.id, count(m.id) > 0 ? '✓' : '0/1', count(m.id) > 0);
@@ -1580,8 +1617,439 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     });
   }
 
+  /* =====================================================================
+     Væsner: 50 families of creatures of our own, each growing through two or three stages. They live in their own
+     kinds of land; you meet them, your best friend fights them by itself in a little arena you can walk around,
+     and once a wild one is beaten you can catch it with a catching ball.
+     ===================================================================== */
+  var CT = { // the kinds: name, picture, colour; and who is strong against whom
+    ild: { n: 'Ild', i: '🔥', c: 0xff6a2b, s: ['græs', 'is', 'metal'] }, vand: { n: 'Vand', i: '💧', c: 0x3aa0ff, s: ['ild', 'sten', 'jord'] }, græs: { n: 'Græs', i: '🌿', c: 0x3ac45a, s: ['vand', 'sten', 'jord'] },
+    lyn: { n: 'Lyn', i: '⚡', c: 0xffd23a, s: ['vand', 'luft', 'metal'] }, is: { n: 'Is', i: '❄️', c: 0x8fe6ff, s: ['græs', 'luft', 'jord'] }, sten: { n: 'Sten', i: '🪨', c: 0xb8a068, s: ['ild', 'is', 'luft'] },
+    luft: { n: 'Luft', i: '🪶', c: 0xa8c8ff, s: ['græs', 'gift'] }, mørke: { n: 'Mørke', i: '🌑', c: 0x7a5aa6, s: ['lys'] }, lys: { n: 'Lys', i: '✨', c: 0xff9ad8, s: ['mørke', 'gift'] },
+    jord: { n: 'Jord', i: '🟤', c: 0xc8a050, s: ['ild', 'lyn', 'metal', 'gift'] }, metal: { n: 'Metal', i: '⚙️', c: 0xb8c0d8, s: ['is', 'sten', 'lys'] }, gift: { n: 'Gift', i: '🧪', c: 0xa65cd0, s: ['græs', 'lys'] }
+  };
+  function typeMult(a, d) { return CT[a].s.indexOf(d) >= 0 ? 1.5 : (CT[d].s.indexOf(a) >= 0 ? 0.7 : 1); }
+  // biomes: 0 plains, 1 forest, 2 desert, 3 snow, 4 mountains, 5 savanna, 6 red rock; 'w' lives in water; night: only out at night
+  function Lx(names, t, plan, c, f, bio, fact, o) { return Object.assign({ names: names, t: t, plan: plan, c: c, f: f, bio: bio, fact: fact, evo: names.length === 3 ? [16, 34] : [22] }, o || {}); }
+  var LINES = [
+    Lx(['Glødsnegl', 'Bålsnegl', 'Vulkansnegl'], 'ild', 'snail', [0xe06a3a, 0x5a3a2a, 0xffd08a], ['shell', 'eyestalks', 'flame', 'spikes', 'crown'], [0, 6], 'Glødsnegl bærer et lille bål i sit hus og varmer sine venner om natten.'),
+    Lx(['Mosling', 'Mospanda', 'Skovpanda'], 'græs', 'quad', [0xe8e4d0, 0x3a6a3a, 0x8acb6a], ['ears', 'moss', 'mushroom', 'mane', 'crown'], [1, 0], 'Mosling sover i solen, for mosset på ryggen spiser lys ligesom en plante.'),
+    Lx(['Skumklat', 'Bølgefnug', 'Stormbølge'], 'vand', 'blob', [0x3a8ad8, 0xeaf6ff, 0xa0d8ff], ['crest', 'fins', 'spikes', 'crown'], [0, 1, 5], 'Skumklat griner med bobler. Jo gladere den er, jo flere bobler.'),
+    Lx(['Lynbille', 'Strømbille', 'Tordenbille'], 'lyn', 'bug', [0x3a4060, 0xffe040, 0xffffff], ['antennae', 'shellglow', 'horn1', 'wings'], [5, 0], 'Lynbillen lyser gult, når det er tordenvejr, og summer som en lille motor.'),
+    Lx(['Snefnug', 'Frostbamse', 'Isbjørnekonge'], 'is', 'quad', [0xf4f8ff, 0x8fd0f0, 0xdff0ff], ['ears', 'fluff', 'mane', 'crown'], [3], 'Snefnug ruller sig ned ad bakker som en snebold, fordi det er hurtigere end at gå.'),
+    Lx(['Stenpus', 'Klippekat'], 'sten', 'quad', [0x8a8478, 0x5a554c, 0xb8b0a0], ['ears', 'spikes', 'horns'], [4, 6], 'Stenpus spinder så højt, at småsten ruller ned ad bjerget.'),
+    Lx(['Vindfjer', 'Skysvale', 'Stormfalk'], 'luft', 'bird', [0x8ab8f0, 0xffffff, 0xf0f6ff], ['crest', 'tailfeathers', 'wings2', 'crown'], [0, 4], 'Vindfjer kan flyve baglæns, når den vil drille sine venner.'),
+    Lx(['Skyggemus', 'Natflagre'], 'mørke', 'bird', [0x3a2c50, 0x7a5aa6, 0x5a4a6a], ['ears', 'wings2', 'fangs'], [1, 6], 'Skyggemus kommer kun frem om natten og synger med en meget fin stemme.', { night: true }),
+    Lx(['Lysglimt', 'Stjernefe'], 'lys', 'blob', [0xfff0fa, 0xff9ad8, 0xffffff], ['wings', 'halo', 'crown'], [0, 3], 'Lysglimt lyser som en lille stjerne og elsker at lege gemmeleg i mørket.', { float: 0.5 }),
+    Lx(['Muldvarpling', 'Gravemuld'], 'jord', 'quad', [0x6a4a3a, 0xffb0a0, 0x9a7a5a], ['snout', 'claws', 'horn1'], [5, 2], 'Muldvarpling kan grave en tunnel hele vejen under en flod.'),
+    Lx(['Rustkrabbe', 'Stålkrabbe'], 'metal', 'bug', [0xa86a4a, 0xc8c8d0, 0xe0d0c0], ['claws', 'shell', 'spikes'], [2, 6], 'Rustkrabben samler på blanke ting og pudser dem med sine klosakse.'),
+    Lx(['Giftfrø', 'Sumpfrø', 'Tågefrø'], 'gift', 'frog', [0x8a4ac0, 0xe0f040, 0xd0b0f0], ['spots', 'crest', 'frill', 'crown'], [1], 'Giftfrøen er kun giftig for dem, der driller den. Ellers er den helt blød.'),
+    Lx(['Ørkenøgle', 'Sandvaran'], 'jord', 'lizard', [0xd8b070, 0x8a5a3a, 0xf0e0b0], ['spikes', 'frill', 'horn1'], [2], 'Ørkenøglen drikker dug fra sin egen hud om morgenen.'),
+    Lx(['Kaktuspindsvin', 'Tornbasse'], 'græs', 'quad', [0x4a9a4a, 0xf0e0a0, 0x9ad07a], ['spikes', 'flower', 'crown'], [2], 'Kaktuspindsvinet kan spare på vand i flere uger, og blomsten på hovedet dufter af honning.'),
+    Lx(['Lavaskildpadde', 'Vulkanskjold'], 'ild', 'quad', [0x5a4a40, 0xff7a30, 0x8a6a50], ['shell', 'spikes', 'flame'], [6], 'Lavaskildpadden går langsomt, men dens skjold er varmt nok til at riste skumfiduser.'),
+    Lx(['Isfisk', 'Frostgedde'], 'is', 'fish', [0x9ad8f0, 0xffffff, 0xd0f0ff], ['fins', 'spikes', 'crest'], ['w', 3], 'Isfisken kan svømme under isen hele vinteren uden at fryse.'),
+    Lx(['Boblefisk', 'Kæmpeboble', 'Boblekonge'], 'vand', 'fish', [0xff9a5a, 0xffffff, 0xffd0a0], ['fins', 'spots', 'crest', 'crown'], ['w', 0, 1], 'Boblefisken laver ringe af bobler og svømmer igennem dem for sjov.'),
+    Lx(['Skalkrabbe', 'Tårnkrabbe'], 'vand', 'bug', [0xe0603a, 0xf0e0c0, 0xffb090], ['claws', 'shell', 'spikes'], [0, 5], 'Skalkrabben bor i et nyt hus hvert år og bygger det selv af skaller.'),
+    Lx(['Summebi', 'Bikonge'], 'luft', 'bug', [0xf0c030, 0x2a2420, 0xfff0a0], ['wings', 'stripes', 'crown'], [0, 1], 'Summebien danser for at fortælle sine venner, hvor de bedste blomster er.'),
+    Lx(['Puppelil', 'Regnbuevinge'], 'lys', 'bug', [0xa0d870, 0xff8ac8, 0xffffff], ['antennae', 'wings', 'spots'], [0], 'Puppelil sover i en puppe i ti dage og vågner med regnbuefarvede vinger.', { float: 0.4 }),
+    Lx(['Bladskjold', 'Lundskjold', 'Urtskjold'], 'græs', 'quad', [0x6a8a4a, 0x3a6a2a, 0xa0c070], ['shell', 'leaf', 'mushroom', 'crown'], [1], 'Bladskjold har en lille have på ryggen, hvor fugle kommer og spiser bær.'),
+    Lx(['Gnisthest', 'Flammeganger'], 'ild', 'quad', [0xf0d0a0, 0xff6020, 0xfff0d0], ['mane', 'tailflame', 'horn1'], [5], 'Gnisthesten løber så hurtigt, at græsset efter den bliver varmt.', { long: true }),
+    Lx(['Isræv', 'Polarånd'], 'is', 'quad', [0xf8fbff, 0x9ad8ff, 0xe0f0ff], ['ears', 'fluff', 'tails'], [3], 'Isræven kan høre en mus under sneen og hopper ned efter den med næsen først.'),
+    Lx(['Klippeged', 'Bjergvædder'], 'sten', 'quad', [0xe8e0d0, 0x6a6458, 0xc8c0b0], ['horns', 'fluff', 'crown'], [4], 'Klippegeden kan stå på en sten, der ikke er større end en tændstikæske.'),
+    Lx(['Tågeugle', 'Månesugle'], 'mørke', 'bird', [0x5a5070, 0xffe060, 0x8a80a0], ['ears', 'tailfeathers', 'crown'], [1], 'Tågeuglen kan dreje hovedet næsten hele vejen rundt og ser i mørke.', { night: true }),
+    Lx(['Drømmefår', 'Skyfår'], 'lys', 'quad', [0xffffff, 0xffb0e0, 0xfff0f8], ['fluff', 'horns', 'halo'], [0], 'Drømmefåret får alle, der klapper det, til at drømme om skyer.'),
+    Lx(['Sandorm', 'Klitorm', 'Ørkenslange'], 'jord', 'snake', [0xd8b070, 0xa06a40, 0xf0d8a0], ['spikes', 'frill', 'horn1', 'crown'], [2], 'Sandormen svømmer i sand ligesom en fisk i vand.'),
+    Lx(['Jernsnegl', 'Pansersnegl'], 'metal', 'snail', [0x9aa0b0, 0x5a6070, 0xd0d4e0], ['shell', 'eyestalks', 'spikes'], [6, 4], 'Jernsneglen er så tung, at den aldrig blæser væk i storm.'),
+    Lx(['Giftsvamp', 'Sporekonge'], 'gift', 'blob', [0xe8e0d0, 0xb040c0, 0xffffff], ['mushroom', 'spots', 'crown'], [1], 'Giftsvampen gemmer sig mellem rigtige svampe og griner, når nogen finder den.'),
+    Lx(['Lyngnask', 'Stormgnasker'], 'lyn', 'quad', [0xd8c060, 0x3a3020, 0xf0e0a0], ['mane', 'stripes', 'spikes'], [5], 'Lyngnask spiser kun græs, der er blevet ramt af lyn. Det smager af peber, siger den.'),
+    Lx(['Mudderlarve', 'Mudderslange'], 'jord', 'snake', [0x7a5a3a, 0x4a3020, 0xa08060], ['spots', 'frill'], [1, 0], 'Mudderlarven elsker regnvejr, fordi så bliver alt til mudder.'),
+    Lx(['Kulkugle', 'Glødekugle'], 'ild', 'blob', [0x3a3a3a, 0xff8030, 0x6a6a6a], ['flame', 'spikes', 'crown'], [6], 'Kulkuglen bliver rød indeni, når den er sur, og sort, når den sover.'),
+    Lx(['Frostugle', 'Snestorm'], 'is', 'bird', [0xf0f8ff, 0x7ac0e0, 0xffffff], ['crest', 'tailfeathers', 'wings2'], [3, 4], 'Frostuglen laver snefnug, når den basker med vingerne.'),
+    Lx(['Krystalfirben', 'Diamantfirben'], 'sten', 'lizard', [0x8a7ab0, 0x7affff, 0xc0b0e0], ['gem', 'spikes', 'crown'], [4], 'Krystalfirbenet glimter i solen og kan bruges som lommelygte i huler.'),
+    Lx(['Bladhjort', 'Skovhjort'], 'græs', 'quad', [0xa07040, 0x4ab83a, 0xe0c090], ['antlers', 'leaf', 'flower'], [1], 'Bladhjortens gevir er lavet af grene, og om foråret springer de ud med blade.', { long: true }),
+    Lx(['Skyhval', 'Himmelhval'], 'luft', 'fish', [0xb0d0f0, 0xffffff, 0xe0f0ff], ['fins', 'spots'], [0, 4], 'Skyhvalen svømmer i luften mellem skyerne og synger lange, dybe sange.', { float: 2.2, big: 1.5 }),
+    Lx(['Natkat', 'Skyggepanter'], 'mørke', 'quad', [0x2a2438, 0x8a6ad0, 0x4a4060], ['ears', 'stripes', 'tails'], [1, 6], 'Natkatten går så stille, at ikke engang uglerne hører den.', { night: true }),
+    Lx(['Solspire', 'Solblomst'], 'lys', 'biped', [0x6ac04a, 0xffd23a, 0xffe8a0], ['flower', 'leaf', 'halo'], [0, 5], 'Solspiren drejer altid ansigtet mod solen, også når den sover.'),
+    Lx(['Støvbille', 'Stenbille'], 'jord', 'bug', [0x8a6a4a, 0x5a4030, 0xb09070], ['horn1', 'shell'], [2, 5], 'Støvbillen ruller små kugler af jord og bygger slotte med dem.'),
+    Lx(['Bolteknægt', 'Robotknægt'], 'metal', 'biped', [0xb8c0d8, 0x3a8ad8, 0x8090a8], ['antennae', 'gem', 'spikes'], [4, 6], 'Bolteknægten blev fundet i et bjerg og ved ikke selv, hvem der byggede den.'),
+    Lx(['Giftsnog', 'Kongesnog'], 'gift', 'snake', [0x5a3a8a, 0xf0e040, 0x8a6ab0], ['frill', 'spots', 'crown'], [1], 'Giftsnogen hvisler en lille sang, når den er glad.'),
+    Lx(['Pustefisk', 'Kuglefisk'], 'vand', 'fish', [0xe8d870, 0x7a5a30, 0xfff0b0], ['spikes', 'spots'], ['w', 0, 5], 'Pustefisken puster sig op som en ballon, når den bliver forskrækket.'),
+    Lx(['Askefugl', 'Ildfalk'], 'ild', 'bird', [0x6a6060, 0xff7020, 0xa09090], ['crest', 'tailflame', 'wings2'], [6, 5], 'Askefuglen tager bad i varm aske i stedet for vand.'),
+    Lx(['Rimfirben', 'Frostdrage'], 'is', 'lizard', [0xa0d8f0, 0xffffff, 0xd0f0ff], ['spikes', 'wings', 'horns'], [3, 4], 'Rimfirbenet ånder små skyer af frost, når det er koldt.', { evo: [26] }),
+    Lx(['Skyklat', 'Tordensky'], 'luft', 'blob', [0xf0f4fa, 0x8a90a8, 0xffffff], ['fluff', 'antennae', 'crown'], [0, 4], 'Skyklatten kan regne lidt, hvis blomsterne er tørstige.', { float: 1.0 }),
+    Lx(['Stålulv', 'Jernulv'], 'metal', 'quad', [0x9aa0b0, 0x4a5060, 0xc8ccd8], ['ears', 'spikes', 'mane'], [4], 'Stålulven hyler så det klinger som en klokke.'),
+    Lx(['Lyskugle', 'Månefe'], 'lys', 'blob', [0xfff8d0, 0xffd860, 0xffffff], ['wings', 'halo', 'crown'], [3], 'Lyskuglen lyser blødt og viser vej for dem, der er faret vild.', { float: 0.6 }),
+    Lx(['Myrling', 'Myredronning'], 'jord', 'bug', [0x8a3a2a, 0x3a2018, 0xc06a50], ['antennae', 'crown'], [0, 5], 'Myrlingen kan bære en sten, der er 20 gange tungere end den selv.'),
+    Lx(['Algeskildpadde', 'Koralskjold'], 'vand', 'quad', [0x4a8a7a, 0xff8a8a, 0x8ac0a0], ['shell', 'leaf', 'spikes'], [0, 5], 'Algeskildpadden har en lille koralrev på ryggen, hvor bittesmå fisk bor.'),
+    Lx(['Tusmørkeræv', 'Midnatsræv'], 'mørke', 'quad', [0x3a3050, 0xc0a0ff, 0x6a5a80], ['ears', 'tails', 'stripes'], [2, 6], 'Tusmørkeræven kommer frem, når solen går ned, og samler på stjerneskud.', { night: true })
+  ];
+  var CF = []; // every form: a family and its stage
+  LINES.forEach(function (D, li) { D.names.forEach(function (nm, si) { CF.push({ li: li, si: si, n: nm, line: D, last: si === D.names.length - 1 }); }); });
+  function formOf(li, si) { for (var i = 0; i < CF.length; i++) if (CF[i].li === li && CF[i].si === si) return i; return -1; }
+  var STARTERS = [formOf(0, 0), formOf(1, 0), formOf(2, 0)];
+  var crTeam = [], crBox = [], crSeen = {}, crCaught = {}, crUid = 1, caughtTotal = 0;
+  function maxHp(c) { return 18 + c.lvl * 4 + CF[c.f].si * 6; }
+  function atkOf(c) { return 3 + c.lvl * 0.9 + CF[c.f].si * 2; }
+  function xpNeed(c) { return 10 + c.lvl * 8; }
+  function makeCr(f, lvl) { var c = { f: f, lvl: lvl, xp: 0, uid: crUid++ }; c.hp = maxHp(c); return c; }
+  function crName(c) { return CF[c.f].n; }
+
+  /* ---------- how they look: boxes put together after a body plan, more parts and bigger for every stage ---------- */
+  function buildCr(f) {
+    var F = CF[f], D = F.line, s = [0.55, 0.8, 1.08][F.si] * (D.big || 1), g = new THREE.Group(), q = new THREE.Group(); g.add(q);
+    var c1 = D.c[0], c2 = D.c[1], c3 = D.c[2], feat = D.f.slice(0, Math.min(D.f.length, 2 + F.si)), has = function (k) { return feat.indexOf(k) >= 0; };
+    function b(w, h, d, x, y, z, c, glow) { return box(q, w * s, h * s, d * s, x * s, y * s, z * s, c, glow); }
+    var legs = [], hy, hz, hw, hd, top, bz, bd, bw, tailZ, tailY, P = D.plan;
+    if (P === 'quad' || P === 'frog') {
+      var lh = P === 'frog' ? 0.22 : 0.42, bl = D.long ? 1.3 : 1.05; bw = P === 'frog' ? 0.85 : 0.75; bd = bl;
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (p) { legs.push(b(0.22, lh, 0.22, p[0] * bw * 0.32, lh / 2, p[1] * bl * 0.34, c1)); });
+      var bh = P === 'frog' ? 0.5 : 0.55; b(bw, bh, bl, 0, lh + bh / 2, 0, c1); b(bw * 0.7, 0.06, bl * 0.7, 0, lh + 0.02, 0, c3);
+      top = lh + bh; hw = P === 'frog' ? 0.75 : 0.58; hd = 0.5; hy = top + (P === 'frog' ? -0.05 : 0.18); hz = bl / 2 + 0.12; b(hw, 0.5, hd, 0, hy, hz, c1); b(hw * 0.6, 0.2, 0.06, 0, hy - 0.12, hz + hd / 2, c3);
+      bz = 0; tailZ = -bl / 2 - 0.2; tailY = lh + bh * 0.8; if (P !== 'frog' && !has('tails')) b(0.14, 0.14, 0.45, 0, tailY, tailZ, c1);
+    } else if (P === 'lizard') {
+      bw = 0.6; bd = 1.2; [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (p) { legs.push(b(0.18, 0.22, 0.18, p[0] * 0.38, 0.11, p[1] * 0.4, c1)); });
+      b(bw, 0.36, bd, 0, 0.38, 0, c1); b(bw * 0.8, 0.05, bd * 0.8, 0, 0.2, 0, c3); top = 0.56; hw = 0.48; hd = 0.5; hy = 0.48; hz = 0.82; b(hw, 0.38, hd, 0, hy, hz, c1);
+      b(0.26, 0.22, 0.8, 0, 0.34, -1.0, c1); b(0.16, 0.16, 0.4, 0, 0.3, -1.55, c1); bz = 0; tailZ = -1.7; tailY = 0.3;
+    } else if (P === 'biped') {
+      bw = 0.7; bd = 0.5; legs.push(b(0.24, 0.6, 0.24, -0.18, 0.3, 0, c1), b(0.24, 0.6, 0.24, 0.18, 0.3, 0, c1));
+      b(bw, 0.8, bd, 0, 1.0, 0, c1); b(bw * 0.6, 0.6, 0.05, 0, 0.98, bd / 2, c3); b(0.2, 0.6, 0.2, -0.47, 1.05, 0, c1); b(0.2, 0.6, 0.2, 0.47, 1.05, 0, c1);
+      top = 1.4; hw = 0.62; hd = 0.55; hy = 1.72; hz = 0.05; b(hw, 0.58, hd, 0, hy, hz, c1); bz = 0; tailZ = -0.35; tailY = 0.9;
+    } else if (P === 'bird') {
+      bw = 0.56; bd = 0.75; legs.push(b(0.08, 0.32, 0.08, -0.13, 0.16, 0.05, 0xe8a040), b(0.08, 0.32, 0.08, 0.13, 0.16, 0.05, 0xe8a040));
+      b(bw, 0.52, bd, 0, 0.6, 0, c1); b(bw * 0.7, 0.4, 0.05, 0, 0.58, bd / 2, c3); top = 0.86; hw = 0.46; hd = 0.44; hy = 1.0; hz = 0.3; b(hw, 0.44, hd, 0, hy, hz, c1);
+      b(0.14, 0.11, 0.22, 0, hy - 0.06, hz + hd / 2 + 0.1, 0xf0b040);
+      if (!has('wings2')) { var wl = b(0.08, 0.36, 0.55, -bw / 2 - 0.04, 0.62, -0.02, c2), wr = b(0.08, 0.36, 0.55, bw / 2 + 0.04, 0.62, -0.02, c2); g.userData.wings = [wl, wr]; }
+      bz = 0; tailZ = -bd / 2 - 0.15; tailY = 0.6; b(0.3, 0.08, 0.3, 0, 0.55, tailZ, c2);
+    } else if (P === 'fish') {
+      bw = 0.48; bd = 1.0; b(bw, 0.6, bd, 0, 0.45, 0, c1); b(bw * 0.8, 0.12, bd * 0.7, 0, 0.17, 0, c3); b(0.08, 0.48, 0.38, 0, 0.45, -0.66, c2);
+      top = 0.75; hw = bw; hd = 0.02; hy = 0.5; hz = bd / 2; bz = 0; tailZ = -0.7; tailY = 0.45;
+    } else if (P === 'blob') {
+      bw = 0.85; bd = 0.85; b(bw, 0.78, bd, 0, 0.39, 0, c1); b(bw * 0.7, 0.1, bd * 0.7, 0, 0.82, 0, c3); top = 0.78; hw = bw; hd = 0.02; hy = 0.48; hz = bd / 2; bz = 0; tailZ = -bd / 2; tailY = 0.4;
+    } else if (P === 'snake') {
+      bw = 0.38; bd = 1.6; for (var k = 0; k < 5; k++) b(0.38 - k * 0.03, 0.34 - k * 0.02, 0.42, Math.sin(k * 1.3) * 0.12, 0.17, 0.5 - k * 0.38, k % 2 ? c1 : c3);
+      top = 0.36; hw = 0.48; hd = 0.52; hy = 0.36; hz = 0.92; b(hw, 0.4, hd, 0, hy, hz, c1); b(0.3, 0.06, 0.1, 0, hy - 0.15, hz + hd / 2, 0xff5050); bz = 0; tailZ = -1.4; tailY = 0.12;
+    } else if (P === 'bug') {
+      bw = 0.62; bd = 1.0; b(0.62, 0.42, 0.55, 0, 0.42, -0.25, c1); b(0.5, 0.36, 0.38, 0, 0.42, 0.2, c1);
+      for (var j = 0; j < 6; j++) legs.push(b(0.36, 0.07, 0.07, (j % 2 ? 1 : -1) * 0.42, 0.2, -0.32 + Math.floor(j / 2) * 0.28, c2));
+      top = 0.63; hw = 0.42; hd = 0.36; hy = 0.48; hz = 0.55; b(hw, 0.36, hd, 0, hy, hz, c1); bz = -0.1; tailZ = -0.6; tailY = 0.4;
+    } else { // snail
+      bw = 0.45; bd = 1.1; b(bw, 0.3, bd, 0, 0.15, 0, c3); top = 0.3; hw = 0.42; hd = 0.36; hy = 0.42; hz = 0.6; b(hw, 0.38, hd, 0, hy, hz, c3); bz = -0.15; tailZ = -0.6; tailY = 0.15;
+    }
+    // eyes, looking out of the front of the head
+    var ex = Math.min(0.2, hw * 0.25), ez = hz + hd / 2 + 0.015, ey = hy + 0.06;
+    if (has('eyestalks')) { b(0.06, 0.38, 0.06, -0.12, hy + 0.36, hz + 0.08, c3); b(0.06, 0.38, 0.06, 0.12, hy + 0.36, hz + 0.08, c3); b(0.13, 0.13, 0.13, -0.12, hy + 0.6, hz + 0.08, 0xffffff); b(0.13, 0.13, 0.13, 0.12, hy + 0.6, hz + 0.08, 0xffffff); b(0.07, 0.07, 0.03, -0.12, hy + 0.6, hz + 0.16, 0x101010, true); b(0.07, 0.07, 0.03, 0.12, hy + 0.6, hz + 0.16, 0x101010, true); }
+    else { b(0.14, 0.14, 0.03, -ex, ey, ez, 0xffffff); b(0.14, 0.14, 0.03, ex, ey, ez, 0xffffff); b(0.08, 0.1, 0.04, -ex, ey - 0.01, ez + 0.01, 0x101018, true); b(0.08, 0.1, 0.04, ex, ey - 0.01, ez + 0.01, 0x101018, true); }
+    var ht = hy + (P === 'fish' || P === 'blob' ? 0.39 : 0.25); // top of the head
+    feat.forEach(function (k) {
+      if (k === 'ears') { b(0.14, 0.26, 0.08, -hw * 0.32, ht + 0.12, hz, c1); b(0.14, 0.26, 0.08, hw * 0.32, ht + 0.12, hz, c1); b(0.07, 0.15, 0.09, -hw * 0.32, ht + 0.1, hz + 0.01, c2); b(0.07, 0.15, 0.09, hw * 0.32, ht + 0.1, hz + 0.01, c2); }
+      else if (k === 'horns') { b(0.1, 0.34, 0.1, -hw * 0.3, ht + 0.16, hz - 0.05, c3); b(0.1, 0.34, 0.1, hw * 0.3, ht + 0.16, hz - 0.05, c3); b(0.1, 0.1, 0.18, -hw * 0.3, ht + 0.3, hz - 0.18, c3); b(0.1, 0.1, 0.18, hw * 0.3, ht + 0.3, hz - 0.18, c3); }
+      else if (k === 'horn1') b(0.12, 0.38, 0.12, 0, ht + 0.18, hz + 0.08, c2);
+      else if (k === 'antlers') { [-1, 1].forEach(function (sd) { b(0.07, 0.5, 0.07, sd * hw * 0.3, ht + 0.25, hz - 0.05, 0x8a6a40); b(0.25, 0.06, 0.06, sd * (hw * 0.3 + 0.12), ht + 0.42, hz - 0.05, 0x8a6a40); b(0.12, 0.1, 0.12, sd * (hw * 0.3 + 0.24), ht + 0.48, hz - 0.05, c2); }); }
+      else if (k === 'crest') b(0.08, 0.3, Math.max(0.3, hd * 0.9), 0, ht + 0.12, hz - 0.05, c2);
+      else if (k === 'crown') { b(hw * 0.7, 0.08, 0.3, 0, ht + 0.06, hz, 0xffd23a, true); [-1, 0, 1].forEach(function (sd) { b(0.08, 0.16, 0.08, sd * hw * 0.25, ht + 0.16, hz, 0xffd23a, true); }); }
+      else if (k === 'halo') { b(0.6, 0.05, 0.05, 0, ht + 0.32, hz - 0.25, 0xfff6a0, true); b(0.6, 0.05, 0.05, 0, ht + 0.32, hz + 0.25, 0xfff6a0, true); b(0.05, 0.05, 0.5, -0.3, ht + 0.32, hz, 0xfff6a0, true); b(0.05, 0.05, 0.5, 0.3, ht + 0.32, hz, 0xfff6a0, true); }
+      else if (k === 'spikes') for (var t = 0; t < 3; t++) b(0.13, 0.26, 0.13, 0, top + 0.12, bz + (t - 1) * bd * 0.3, c2);
+      else if (k === 'shell') { b(bw * 1.12, 0.5, bd * 0.82, 0, top + 0.22, bz - 0.05, c2); b(bw * 0.7, 0.14, bd * 0.5, 0, top + 0.52, bz - 0.05, c3); }
+      else if (k === 'tailflame') b(0.24, 0.32, 0.24, 0, tailY + 0.2, tailZ - 0.12, 0xffa030, true);
+      else if (k === 'flame') { b(0.3, 0.32, 0.3, 0, top + 0.22, bz, 0xff7a20, true); b(0.18, 0.2, 0.18, 0, top + 0.44, bz, 0xffd040, true); }
+      else if (k === 'mane') b(hw + 0.16, 0.5, 0.24, 0, hy - 0.04, hz - hd / 2 - 0.06, c2);
+      else if (k === 'fluff') { b(bw + 0.1, 0.24, bd * 0.6, 0, top, bz, 0xffffff); b(0.3, 0.2, 0.3, 0, ht + 0.06, hz - 0.05, 0xffffff); }
+      else if (k === 'leaf') { b(0.5, 0.05, 0.28, -0.12, top + 0.04, bz - 0.1, 0x4ab83a); b(0.4, 0.05, 0.24, 0.16, top + 0.06, bz + 0.15, 0x3a9a2a); }
+      else if (k === 'moss') { b(bw * 0.9, 0.08, bd * 0.6, 0, top + 0.03, bz, c2); b(0.2, 0.1, 0.2, 0.15, top + 0.1, bz + 0.1, 0x6ab84a); }
+      else if (k === 'mushroom') { b(0.08, 0.2, 0.08, 0.1, top + 0.12, bz - 0.1, 0xf0e8d0); b(0.34, 0.14, 0.34, 0.1, top + 0.27, bz - 0.1, 0xd84040); b(0.06, 0.06, 0.06, 0.04, top + 0.35, bz - 0.06, 0xffffff); }
+      else if (k === 'flower') { [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (p) { b(0.14, 0.06, 0.14, p[0] * 0.12, ht + 0.04, hz + p[1] * 0.12, 0xff8ac8); }); b(0.12, 0.08, 0.12, 0, ht + 0.06, hz, 0xffe060); }
+      else if (k === 'stripes') for (var u = 0; u < 3; u++) b(bw + 0.02, 0.06, 0.1, 0, top - 0.02, bz + (u - 1) * bd * 0.28, c2);
+      else if (k === 'spots') { b(0.12, 0.12, 0.12, -bw / 2, top - 0.15, bz + 0.15, c2); b(0.12, 0.12, 0.12, bw / 2, top - 0.2, bz - 0.2, c2); b(0.14, 0.04, 0.14, 0.1, top + 0.01, bz, c2); }
+      else if (k === 'fins') { b(0.06, 0.26, 0.34, -bw / 2 - 0.04, top - 0.25, bz, c2); b(0.06, 0.26, 0.34, bw / 2 + 0.04, top - 0.25, bz, c2); b(0.06, 0.22, 0.4, 0, top + 0.1, bz - 0.05, c2); }
+      else if (k === 'wings') { var w1 = b(0.06, 0.5, 0.7, -bw / 2 - 0.08, top + 0.12, bz - 0.05, c2), w2 = b(0.06, 0.5, 0.7, bw / 2 + 0.08, top + 0.12, bz - 0.05, c2); w1.rotation.z = 0.5; w2.rotation.z = -0.5; g.userData.wings = [w1, w2]; }
+      else if (k === 'wings2') { var w3 = b(0.08, 0.45, 0.95, -bw / 2 - 0.05, top - 0.15, bz, c2), w4 = b(0.08, 0.45, 0.95, bw / 2 + 0.05, top - 0.15, bz, c2); g.userData.wings = [w3, w4]; }
+      else if (k === 'tailfeathers') { b(0.5, 0.36, 0.06, 0, tailY + 0.1, tailZ - 0.08, c2); }
+      else if (k === 'tails') { [-1, 0, 1].forEach(function (sd) { b(0.12, 0.12, 0.5, sd * 0.16, tailY + 0.05 + Math.abs(sd) * 0.08, tailZ - 0.05, c2); }); }
+      else if (k === 'frill') b(hw + 0.4, 0.55, 0.05, 0, hy + 0.1, hz - hd / 2 - 0.04, c2);
+      else if (k === 'claws') { b(0.28, 0.24, 0.28, -bw / 2 - 0.18, 0.4, hz + 0.1, c2); b(0.28, 0.24, 0.28, bw / 2 + 0.18, 0.4, hz + 0.1, c2); }
+      else if (k === 'snout') b(0.26, 0.2, 0.24, 0, hy - 0.06, hz + hd / 2 + 0.1, c2);
+      else if (k === 'fangs') { b(0.05, 0.1, 0.03, -0.07, hy - 0.16, ez, 0xffffff); b(0.05, 0.1, 0.03, 0.07, hy - 0.16, ez, 0xffffff); }
+      else if (k === 'gem') b(0.14, 0.14, 0.05, 0, hy + 0.2, ez, c2, true);
+      else if (k === 'antennae') { b(0.05, 0.4, 0.05, -0.12, ht + 0.18, hz + 0.05, c1); b(0.05, 0.4, 0.05, 0.12, ht + 0.18, hz + 0.05, c1); b(0.1, 0.1, 0.1, -0.12, ht + 0.4, hz + 0.05, c2, true); b(0.1, 0.1, 0.1, 0.12, ht + 0.4, hz + 0.05, c2, true); }
+      else if (k === 'shellglow') { b(bw * 0.9, 0.06, 0.1, 0, top + 0.02, bz - 0.1, c2, true); b(bw * 0.9, 0.06, 0.1, 0, top + 0.02, bz + 0.15, c2, true); }
+    });
+    g.userData.legs = legs.length ? legs : undefined;
+    q.position.y = (D.float || 0);
+    g.updateMatrixWorld(true);
+    var bb = new THREE.Box3().setFromObject(q), sz = bb.getSize(new THREE.Vector3());
+    g.userData.size = [Math.max(0.2, Math.min(0.7, Math.max(sz.x, sz.z) / 2)), Math.max(0.4, sz.y)];
+    g.userData.float = D.float || 0;
+    return g;
+  }
+  function crKind(f) {
+    var k = 'cr:' + f; if (KINDS[k]) return k;
+    var tmp = buildCr(f), sz = tmp.userData.size; tmp.traverse(function (o) { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+    KINDS[k] = { n: CF[f].n, hp: 999, sp: 1.7, w: sz[0], h: Math.min(2.4, sz[1]), passive: true, cr: f, col: CF[f].line.c[0], drop: [] };
+    return k;
+  }
+
+  /* ---------- small pictures of every form, drawn with the game's own renderer ---------- */
+  var crPics = {}, picScene = new THREE.Scene(), picCam = new THREE.PerspectiveCamera(30, 1, 0.1, 50), picRT = null;
+  function crPic(f, dark) {
+    var key = f + (dark ? 'd' : ''); if (crPics[key]) return crPics[key];
+    if (!picRT) picRT = new THREE.WebGLRenderTarget(96, 96);
+    var g = buildCr(f); picScene.add(g); g.rotation.y = 0.6;
+    if (dark) g.traverse(function (o) { if (o.isMesh) o.material.color.setHex(0x26303a); });
+    g.updateMatrixWorld(true); var bb = new THREE.Box3().setFromObject(g), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3()), r = Math.max(sz.x, sz.y, sz.z) * 0.62;
+    picCam.position.set(c.x + r * 1.1, c.y + r * 0.9, c.z + r * 2.6); picCam.lookAt(c);
+    var old = renderer.getRenderTarget(), oc = renderer.getClearColor(new THREE.Color()), oa = renderer.getClearAlpha();
+    renderer.setRenderTarget(picRT); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(picScene, picCam);
+    var buf = new Uint8Array(96 * 96 * 4); renderer.readRenderTargetPixels(picRT, 0, 0, 96, 96, buf);
+    renderer.setRenderTarget(old); renderer.setClearColor(oc, oa);
+    picScene.remove(g); g.traverse(function (o) { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+    var cv = document.createElement('canvas'); cv.width = cv.height = 96; var x = cv.getContext('2d'), img = x.createImageData(96, 96);
+    for (var y = 0; y < 96; y++) img.data.set(buf.subarray((95 - y) * 96 * 4, (96 - y) * 96 * 4), y * 96 * 4);
+    x.putImageData(img, 0, 0); crPics[key] = cv.toDataURL(); return crPics[key];
+  }
+
+  /* ---------- your friend walks with you ---------- */
+  var leadMon = null;
+  function syncLead() {
+    var c = crTeam.find(function (q) { return q.hp > 0; }), want = c && !battle ? c.f : -1;
+    if (leadMon && (leadMon.cf !== want || monsters.indexOf(leadMon) < 0)) { if (monsters.indexOf(leadMon) >= 0) removeMonster(leadMon); leadMon = null; }
+    if (want < 0 || leadMon) return;
+    var nx = player.x - Math.sin(player.yaw) * -1.6 + 1, nz = player.z + 1;
+    leadMon = spawnMonster(crKind(want), player.x + 1.2, player.y + 0.05, player.z + 1.2); leadMon.pet = true; leadMon.owned = true; leadMon.cf = want; leadMon.uid = c.uid;
+  }
+
+  /* ---------- the fight: an arena on the ground, and two friends fighting by themselves ---------- */
+  var battle = null, shots = [], floaters = [];
+  function hpSprite() { var cv = document.createElement('canvas'); cv.width = 128; cv.height = 40; var t = new THREE.CanvasTexture(cv); t.magFilter = THREE.NearestFilter; var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true, fog: false })); s.scale.set(1.4, 0.44, 1); s.renderOrder = 30; s.userData.cv = cv; scene.add(s); return s; }
+  function drawHp(sp, c, wild) {
+    var cv = sp.userData.cv, x = cv.getContext('2d'), k = Math.max(0, c.hp / maxHp(c));
+    x.clearRect(0, 0, 128, 40); x.fillStyle = '#000a'; x.fillRect(0, 0, 128, 40); x.fillStyle = '#fff'; x.font = 'bold 15px system-ui,sans-serif';
+    x.fillText(CT[CF[c.f].line.t].i + ' ' + CF[c.f].n.slice(0, 11) + ' ' + c.lvl, 4, 16); x.fillStyle = '#333'; x.fillRect(4, 24, 120, 11);
+    x.fillStyle = k > 0.5 ? '#3ad16a' : k > 0.2 ? '#ffb02e' : '#ff4b3a'; x.fillRect(4, 24, 120 * k, 11); x.strokeStyle = wild ? '#ff8a6a' : '#7ad8a0'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, 125, 37);
+    sp.material.map.needsUpdate = true;
+  }
+  function floater(txt, x, y, z, col) {
+    var cv = document.createElement('canvas'); cv.width = 96; cv.height = 40; var g = cv.getContext('2d'); g.font = 'bold 30px system-ui,sans-serif'; g.textAlign = 'center'; g.lineWidth = 6; g.strokeStyle = '#000'; g.strokeText(txt, 48, 30); g.fillStyle = col || '#fff'; g.fillText(txt, 48, 30);
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false, transparent: true, fog: false })); s.scale.set(0.9, 0.38, 1); s.position.set(x, y, z); s.renderOrder = 31; scene.add(s); floaters.push({ s: s, t: 0 });
+  }
+  function startBattle(wild) {
+    var c = crTeam.find(function (q) { return q.hp > 0; });
+    if (!c) { say(crTeam.length ? 'Dine væsner er trætte. Vent lidt, eller sov i en seng 🛏️' : 'Du har ingen væsen-ven endnu. Vælg en i tasken 🎒'); return; }
+    if (battle) return;
+    var cx = (wild.x + player.x) / 2, cz = (wild.z + player.z) / 2, cy = Math.max(topOf(Math.floor(cx), Math.floor(cz)) + 1, Math.floor(Math.min(wild.y, player.y)));
+    if (leadMon) { removeMonster(leadMon); leadMon = null; }
+    var mine = spawnMonster(crKind(c.f), cx - 1.6, cy + 0.05, cz), wc = wild.wc;
+    mine.owned = true; mine.inBattle = true; wild.inBattle = true; wild.x = cx + 1.6; wild.z = cz; wild.y = cy + 0.05; wild.vx = wild.vz = 0;
+    var ring = new THREE.Group();
+    var r1 = new THREE.Mesh(new THREE.RingGeometry(3.3, 3.55, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe060, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false })); r1.position.set(cx, cy + 0.04, cz); ring.add(r1);
+    var r2 = new THREE.Mesh(new THREE.RingGeometry(0.0, 0.3, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false })); r2.position.set(cx, cy + 0.04, cz); ring.add(r2);
+    for (var i = 0; i < 12; i++) { var a = i / 12 * Math.PI * 2, px = cx + Math.cos(a) * 3.45, pz = cz + Math.sin(a) * 3.45; var post = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.7, 0.14), new THREE.MeshBasicMaterial({ color: 0x8a6a40 })); post.position.set(px, cy + 0.35, pz); ring.add(post); var fl = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), new THREE.MeshBasicMaterial({ color: 0xffd060 })); fl.position.set(px, cy + 0.78, pz); ring.add(fl); }
+    scene.add(ring);
+    battle = { c: c, w: wc, A: mine, B: wild, cx: cx, cy: cy, cz: cz, ring: ring, hpA: hpSprite(), hpB: hpSprite(), t: 0, over: false, beaten: false };
+    drawHp(battle.hpA, c, false); drawHp(battle.hpB, wc, true);
+    crSeen[wc.f] = 1; tone(392, 0.12, 0.12, 'square'); tone(523, 0.16, 0.12, 'square', 0, 0.12);
+    say('En vild ' + crName(wc) + ' (lv ' + wc.lvl + ')! ' + crName(c) + ' kæmper. Gå rundt og se med 👀');
+    showBattleUi(); saveSoon();
+  }
+  function showBattleUi() {
+    var el = $('#bat'); if (!battle) { el.hidden = true; return; } el.hidden = false;
+    el.innerHTML = '<button class="pbtn' + (battle.beaten ? ' g' : '') + '" id="bCatch">🟢 Fang' + (battle.beaten ? ' (' + count(BALL) + ')' : '') + '</button><button class="pbtn" id="bRun">🏃 ' + (battle.beaten ? 'Videre' : 'Løb') + '</button>';
+    press($('#bCatch'), throwBall); press($('#bRun'), function () { endBattle(battle.beaten ? 'leave' : 'run'); });
+  }
+  function fighterStep(F, E, me, foe, dt, t) { // move toward the other one and attack now and then
+    var dx = E.x - F.x, dz = E.z - F.z, d = Math.hypot(dx, dz) || 1, wx = 0, wz = 0, K = KINDS[F.kind];
+    F.cd = (F.cd == null ? 0.8 + Math.random() : F.cd) - dt; F.lunge = Math.max(0, (F.lunge || 0) - dt);
+    if (F.lunge > 0) { wx = dx / d * 3; wz = dz / d * 3; }
+    else if (d > 1.5 + K.w + KINDS[E.kind].w) { wx = dx / d; wz = dz / d; }
+    else if (d < 1.0) { wx = -dx / d * 0.6; wz = -dz / d * 0.6; }
+    else { wx = -dz / d * 0.5 * (F === battle.A ? 1 : -1); wz = dx / d * 0.5 * (F === battle.A ? 1 : -1); } // circle around each other
+    var ox = F.x - battle.cx, oz = F.z - battle.cz, od = Math.hypot(ox, oz); if (od > 3) { wx -= ox / od; wz -= oz / od; }
+    moveBody(F, dt, wx, wz, F.bumped && F.ground, F.lunge > 0 ? 4.5 : 2.2);
+    F.mesh.rotation.y = Math.atan2(dx, dz);
+    if (F.cd <= 0 && !battle.over) {
+      F.cd = 1.3 + Math.random() * 0.8;
+      var ranged = Math.random() < 0.45 || d > 3;
+      if (ranged) { var col = CT[CF[me.f].line.t].c, sh = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.28), new THREE.MeshBasicMaterial({ color: col })); sh.position.set(F.x, F.y + KINDS[F.kind].h * 0.6, F.z); scene.add(sh); shots.push({ m: sh, from: F, to: E, me: me, foe: foe, t: 0 }); tone(600 + Math.random() * 300, 0.12, 0.05, 'triangle', 300); }
+      else { F.lunge = 0.28; F.hitAt = 0.18; }
+    }
+    if (F.hitAt != null) { F.hitAt -= dt; if (F.hitAt <= 0) { F.hitAt = null; if (Math.hypot(E.x - F.x, E.z - F.z) < 2.6 + KINDS[F.kind].w) hitFighter(me, foe, E, false); } }
+    var sw = Math.sin(t * 12) * (Math.hypot(F.vx, F.vz) > 0.3 ? 0.7 : 0), ud = F.mesh.userData;
+    if (ud.legs) for (var q = 0; q < ud.legs.length; q++) ud.legs[q].rotation.x = q % 3 === 0 ? sw : -sw;
+    if (ud.wings) { ud.wings[0].rotation.z = 0.4 + Math.sin(t * 14) * 0.4; ud.wings[1].rotation.z = -0.4 - Math.sin(t * 14) * 0.4; }
+    F.mesh.position.set(F.x, F.y, F.z);
+  }
+  function hitFighter(me, foe, E, ranged) {
+    var mult = typeMult(CF[me.f].line.t, CF[foe.f].line.t), dmg = Math.max(1, Math.round(atkOf(me) * mult * (0.85 + Math.random() * 0.3) * (ranged ? 0.9 : 1.1)));
+    foe.hp = Math.max(0, foe.hp - dmg); E.flash = 0.25;
+    var col = mult > 1 ? '#ffd23a' : mult < 1 ? '#aab' : '#fff';
+    floater('-' + dmg, E.x, E.y + KINDS[E.kind].h + 0.5, E.z, col); if (mult > 1) floater('Super!', E.x, E.y + KINDS[E.kind].h + 0.95, E.z, '#ffd23a');
+    burst(E.x - 0.5, E.y, E.z - 0.5, 0, CT[CF[me.f].line.t].c); thud(400, 0.12, 0.5);
+    drawHp(battle.hpA, battle.c, false); drawHp(battle.hpB, battle.w, true);
+    if (foe.hp <= 0) battleDown(foe === battle.w);
+  }
+  function battleDown(wildDown) {
+    if (battle.over) return; battle.over = true;
+    if (wildDown) {
+      battle.beaten = true; var c = battle.c, gain = 6 + battle.w.lvl * 3; c.xp += gain;
+      var msg = crName(battle.w) + ' er besejret! ' + crName(c) + ' fik ' + gain + ' point.';
+      while (c.xp >= xpNeed(c)) { c.xp -= xpNeed(c); c.lvl++; msg += ' Nu level ' + c.lvl + '! ⬆️'; c.hp = Math.min(maxHp(c), c.hp + 6); }
+      say(msg + (count(BALL) ? ' Tryk 🟢 Fang!' : ' Lav fangstkugler i tasken for at fange den.'));
+      [523, 659, 784].forEach(function (f, i) { tone(f, 0.18, 0.1, 'triangle', 0, i * 0.1); });
+      battle.B.mesh.rotation.z = 1.4;
+    } else {
+      var next = crTeam.find(function (q) { return q.hp > 0; });
+      if (next) { // the next friend jumps in
+        say(crName(battle.c) + ' er træt. ' + crName(next) + ' tager over!'); removeMonster(battle.A);
+        battle.c = next; battle.A = spawnMonster(crKind(next.f), battle.cx - 1.6, battle.cy + 0.05, battle.cz); battle.A.owned = true; battle.A.inBattle = true; battle.over = false; drawHp(battle.hpA, next, false); return;
+      }
+      say('Dine væsner er trætte. De bliver friske igen om lidt 💤'); setTimeout(function () { endBattle('lost'); }, 1500);
+    }
+    showBattleUi(); saveSoon();
+  }
+  function throwBall() {
+    if (!battle) return;
+    if (!battle.beaten) { say('Besejr den først. Så kan du fange den!'); return; }
+    if (count(BALL) < 1) { say('Du har ingen fangstkugler. Lav dem i tasken 🎒'); return; }
+    if (battle.catching) return; take(BALL, 1); battle.catching = 0.001;
+    var b0 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), new THREE.MeshBasicMaterial({ map: handTexFor(BALL), transparent: true })); b0.position.copy(camera.position); scene.add(b0); battle.ball = b0; battle.ball0 = camera.position.clone();
+    tone(300, 0.2, 0.08, 'sine', 700);
+  }
+  function handTexFor(id) { var tx = new THREE.TextureLoader().load(ICONS[id]); tx.magFilter = THREE.NearestFilter; tx.minFilter = THREE.NearestFilter; return tx; }
+  function stepCatch(dt) {
+    var B = battle, T = new THREE.Vector3(B.B.x, B.B.y + 0.4, B.B.z); B.catching += dt;
+    if (B.catching < 0.7) { var k = B.catching / 0.7; B.ball.position.lerpVectors(B.ball0, T, k); B.ball.position.y += Math.sin(k * Math.PI) * 1.6; B.ball.rotation.x += dt * 12; return; }
+    if (B.catching < 1.0) { var s0 = 1 - (B.catching - 0.7) / 0.3; B.B.mesh.scale.setScalar(Math.max(0.01, s0)); B.ball.position.copy(T); return; }
+    if (B.catching < 2.4) { B.ball.position.set(T.x, B.cy + 0.15, T.z); B.ball.rotation.z = Math.sin(B.catching * 14) * 0.5 * (Math.floor(B.catching * 2) % 2); return; }
+    // caught!
+    var w = B.w; w.hp = maxHp(w); w.uid = crUid++; if (crTeam.length < 6) crTeam.push(w); else crBox.push(w);
+    crCaught[w.f] = 1; crSeen[w.f] = 1; caughtTotal++;
+    burst(T.x - 0.5, T.y, T.z - 0.5, 0, 0xffe060); [659, 784, 988, 1319].forEach(function (f, i) { tone(f, 0.2, 0.1, 'triangle', 0, i * 0.09); });
+    say('✨ Fanget! ' + crName(w) + ' er nu din ven.' + (crTeam.indexOf(w) < 0 ? ' Den er i kassen.' : ''));
+    endBattle('caught'); misT = 0;
+  }
+  function endBattle(how) {
+    var B = battle; if (!B) return; battle = null;
+    scene.remove(B.ring); B.ring.traverse(function (o) { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+    [B.hpA, B.hpB].forEach(function (s) { scene.remove(s); s.material.map.dispose(); s.material.dispose(); });
+    if (B.ball) { scene.remove(B.ball); B.ball.geometry.dispose(); B.ball.material.dispose(); }
+    if (monsters.indexOf(B.A) >= 0) removeMonster(B.A);
+    if (monsters.indexOf(B.B) >= 0) { if (how === 'caught' || how === 'leave') removeMonster(B.B); else { B.B.inBattle = false; B.B.fleeT = 5; } }
+    shots.forEach(function (s) { scene.remove(s.m); s.m.geometry.dispose(); s.m.material.dispose(); }); shots = [];
+    if (how === 'run') say('Pyha, du løb væk!');
+    if (how === 'caught' || how === 'leave') setTimeout(evolveCheck, 1400);
+    showBattleUi(); syncLead(); saveSoon();
+  }
+  function evolveCheck() { // after a battle: a friend that has grown enough changes into its next stage
+    for (var i = 0; i < crTeam.length; i++) {
+      var c = crTeam[i], F = CF[c.f], D = F.line;
+      if (!F.last && c.lvl >= D.evo[F.si]) {
+        var old = F.n; c.f = formOf(F.li, F.si + 1); c.hp = maxHp(c); crSeen[c.f] = crCaught[c.f] = 1;
+        say('🌟 ' + old + ' udvikler sig til ' + CF[c.f].n + '!'); [523, 659, 784, 1047, 1319].forEach(function (f, k) { tone(f, 0.22, 0.1, 'triangle', 0, k * 0.12); });
+        burst(player.x - 0.5, player.y + 1, player.z - 0.5, 0, 0xffe060); syncLead(); return;
+      }
+    }
+  }
+  function updateBattle(dt, t) {
+    if (!battle) return;
+    var B = battle; B.t += dt;
+    if (Math.hypot(player.x - B.cx, player.z - B.cz) > 26 && !B.catching) { say('Kampen stoppede, du gik for langt væk'); endBattle('run'); return; }
+    if (B.catching) { stepCatch(dt); if (!battle) return; }
+    else if (!B.over) { fighterStep(B.A, B.B, B.c, B.w, dt, t); if (!battle) return; fighterStep(B.B, B.A, B.w, B.c, dt, t); if (!battle) return; }
+    else { B.A.mesh.position.set(B.A.x, B.A.y, B.A.z); B.B.mesh.position.set(B.B.x, B.B.y, B.B.z); }
+    for (var i = shots.length - 1; i >= 0; i--) {
+      var s = shots[i], to = s.to, tp = new THREE.Vector3(to.x, to.y + KINDS[to.kind].h * 0.6, to.z), d = s.m.position.distanceTo(tp);
+      s.t += dt; s.m.rotation.x += dt * 10; s.m.rotation.y += dt * 8;
+      if (d < 0.35 || s.t > 2.5 || !battle) { scene.remove(s.m); s.m.geometry.dispose(); s.m.material.dispose(); shots.splice(i, 1); if (d < 0.35 && battle && !battle.over) hitFighter(s.me, s.foe, to, true); if (!battle) return; continue; }
+      s.m.position.add(tp.sub(s.m.position).normalize().multiplyScalar(Math.min(d, dt * 9)));
+    }
+    if (!battle) return;
+    B.hpA.position.set(B.A.x, B.A.y + KINDS[B.A.kind].h + 0.75, B.A.z); B.hpB.position.set(B.B.x, B.B.y + KINDS[B.B.kind].h + 0.75, B.B.z);
+    // the arena flames flicker
+    B.ring.children.forEach(function (o, k) { if (k > 1 && k % 2 === 1) o.scale.y = 0.8 + Math.sin(t * 9 + k) * 0.25; });
+  }
+  function updateFloaters(dt) { for (var i = floaters.length - 1; i >= 0; i--) { var f = floaters[i]; f.t += dt; f.s.position.y += dt * 0.9; f.s.material.opacity = Math.max(0, 1 - f.t / 1.1); if (f.t > 1.1) { scene.remove(f.s); f.s.material.map.dispose(); f.s.material.dispose(); floaters.splice(i, 1); } } }
+  var restT = 0;
+  function restTeam(dt) { // out of a fight your friends get their strength back little by little
+    if (battle || (restT -= dt) > 0) return; restT = 2;
+    var changed = false; crTeam.forEach(function (c) { var mx = maxHp(c); if (c.hp < mx) { c.hp = Math.min(mx, c.hp + Math.max(1, Math.round(mx * 0.05))); changed = true; } });
+    if (changed) syncLead();
+  }
+
+  /* ---------- wild ones in the world ---------- */
+  function wildLevel() { var best = crTeam.reduce(function (a, c) { return Math.max(a, c.lvl); }, 0); return Math.max(2, Math.min(60, (best || 4) - 2 + Math.floor(Math.random() * 4))); }
+  function trySpawnWild(x, z) {
+    var b = biomeAt(x, z), night = sunUp < 0.3, opts = [];
+    LINES.forEach(function (D, li) { if ((D.night && !night) || D.bio.indexOf(b) < 0 && D.bio.indexOf('w') < 0) return; if (D.bio.indexOf(b) >= 0) opts.push(li); else if (D.bio.indexOf('w') >= 0 && getBlock(x, SEA, z) === WATER) opts.push(li); });
+    if (!opts.length) return false;
+    var li = opts[Math.floor(Math.random() * opts.length)], D = LINES[li], lvl = wildLevel(), si = 0;
+    while (si < D.names.length - 1 && lvl >= D.evo[si] && Math.random() < 0.7) si++;
+    var f = formOf(li, si), water = D.bio.indexOf(b) < 0, y;
+    if (water) { if (getBlock(x, SEA, z) !== WATER) return false; y = SEA - 0.4; }
+    else { y = topOf(x, z) + 1; var below = getBlock(x, y - 1, z); if (!SOLID[below] || below === LEAVES || below === PINE || below === WATER || getBlock(x, y, z) !== AIR || getBlock(x, y + 1, z) !== AIR) return false; }
+    var m = spawnMonster(crKind(f), x + 0.5, y + 0.02 + (water ? 0 : 0), z + 0.5); m.wc = makeCr(f, lvl); m.wild = true;
+    return true;
+  }
+
+  /* ---------- clouds and stars ---------- */
+  var cloudTex = (function () {
+    var N2 = 64, cv = document.createElement('canvas'); cv.width = cv.height = N2; var g = cv.getContext('2d');
+    for (var y = 0; y < N2; y++) for (var x = 0; x < N2; x++) { var v = noise2(x / 6, y / 6, 501) * 0.65 + noise2(x / 2.5, y / 2.5, 503) * 0.35; if (v > 0.6) { g.fillStyle = v > 0.68 ? '#ffffff' : '#f2f4f8'; g.fillRect(x, y, 1, 1); } }
+    var t = new THREE.CanvasTexture(cv); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(10, 10); return t;
+  })();
+  var clouds = new THREE.Mesh(new THREE.PlaneGeometry(1280, 1280).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: cloudTex, transparent: true, opacity: 0.88, depthWrite: false, fog: false, side: THREE.DoubleSide }));
+  clouds.renderOrder = -1; scene.add(clouds);
+  var stars = (function () {
+    var n = 900, pos = new Float32Array(n * 3);
+    for (var i = 0; i < n; i++) { var u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, r = Math.sqrt(1 - u * u); pos[i * 3] = Math.cos(a) * r * 360; pos[i * 3 + 1] = Math.abs(u) * 360 + 10; pos[i * 3 + 2] = Math.sin(a) * r * 360; }
+    var g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    var p = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; scene.add(p); return p;
+  })();
+  function updateSkyBits(dt, t) {
+    var p = camera.position; stars.position.copy(p); stars.material.opacity = Math.max(0, 1 - sunUp * 1.4) * (0.75 + 0.25 * Math.sin(t * 2)); stars.visible = stars.material.opacity > 0.01;
+    clouds.position.set(p.x, WH + 22, p.z); var rep = 1280 / 10; cloudTex.offset.set(p.x / rep + t * 0.0016, -p.z / rep);
+    var l = 0.25 + 0.75 * sunUp; clouds.material.color.setRGB(l, l, Math.min(1, l * 1.05 + 0.05)); clouds.material.opacity = 0.55 + 0.33 * sunUp;
+  }
+
+  /* ---------- your friends in the bag, the book of all creatures ---------- */
+  function crRow(c, i, lead) {
+    var k = Math.max(0, c.hp / maxHp(c)), F = CF[c.f], ty = CT[F.line.t];
+    return '<div class="rec' + (lead ? ' ok' : '') + '" data-cr="' + i + '"><div class="it" style="background-image:url(' + crPic(c.f) + ');background-size:100%"></div><div><b>' + F.n + ' <small>lv ' + c.lvl + '</small></b><small>' + ty.i + ' ' + ty.n + (F.last ? '' : ' · udvikler sig ved lv ' + F.line.evo[F.si]) + '</small><div class="hpb"><i style="width:' + Math.round(k * 100) + '%;background:' + (k > 0.5 ? '#3ad16a' : k > 0.2 ? '#ffb02e' : '#ff4b3a') + '"></i></div></div>' + (lead ? '<b>⭐</b>' : '') + '</div>';
+  }
+  function crBagHtml() {
+    var h = '';
+    if (!crTeam.length && !crBox.length) {
+      h += '<h3>🐾 Vælg din første væsen-ven</h3><div class="row starters">' + STARTERS.map(function (f) { var ty = CT[CF[f].line.t]; return '<button class="pbtn st" data-st="' + f + '"><img src="' + crPic(f) + '"><b>' + CF[f].n + '</b><small>' + ty.i + ' ' + ty.n + '</small></button>'; }).join('') + '</div>';
+    } else {
+      h += '<h3>🐾 Mine væsner (' + crTeam.length + '/6)</h3><p class="bagp">Den med ⭐ går med dig og kæmper først. Tryk på et væsen for at sætte det forrest.</p>' + crTeam.map(function (c, i) { return crRow(c, i, i === 0); }).join('');
+      if (crBox.length) h += '<h3>📦 Kassen (' + crBox.length + ')</h3>' + crBox.map(function (c, i) { return crRow(c, 100 + i, false); }).join('');
+    }
+    h += '<div class="row"><button class="pbtn" id="bDex">📖 Væsenbog (' + Object.keys(crCaught).length + '/' + CF.length + ')</button></div>';
+    return h;
+  }
+  function crBagWire(ov) {
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-st]'), function (el) { tap(el, function () { var f = +el.dataset.st; crTeam.push(makeCr(f, 5)); crCaught[f] = crSeen[f] = 1; say('🐾 ' + CF[f].n + ' er din nye ven! Den går med dig.'); [523, 659, 784].forEach(function (q, i) { tone(q, 0.18, 0.1, 'triangle', 0, i * 0.1); }); syncLead(); saveSoon(); misT = 0; openBag(); }); });
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-cr]'), function (el) { tap(el, function () {
+      var i = +el.dataset.cr, c;
+      if (i >= 100) { c = crBox.splice(i - 100, 1)[0]; if (crTeam.length >= 6) crBox.push(crTeam.pop()); crTeam.unshift(c); }
+      else { c = crTeam.splice(i, 1)[0]; crTeam.unshift(c); }
+      say('⭐ ' + crName(c) + ' går nu med dig'); syncLead(); saveSoon(); openBag();
+    }); });
+    if ($('#bDex')) tap($('#bDex'), openDex);
+  }
+  function openDex(sel) {
+    ovKind = 'dex'; paused = true; releaseAll();
+    var ov = $('#ov'), h = '<div class="panel"><h2>📖 Væsenbog <button class="pbtn" id="oX">✕</button></h2><p>Fanget: <b>' + Object.keys(crCaught).length + '</b> · Set: <b>' + Object.keys(crSeen).length + '</b> · Alle: <b>' + CF.length + '</b> (50 familier)</p>';
+    if (sel != null) {
+      var D = LINES[sel]; h += '<div class="dexf">' + D.names.map(function (nm, si) { var f = formOf(sel, si), known = crSeen[f]; return '<div><img src="' + crPic(f, !known) + '"><b>' + (known ? nm : '?') + '</b>' + (si < D.names.length - 1 ? '<small>lv ' + D.evo[si] + ' ➜</small>' : '') + '</div>'; }).join('') + '</div><p>' + CT[D.t].i + ' ' + CT[D.t].n + '</p><p class="tale">' + (crCaught[formOf(sel, 0)] || D.names.some(function (n, si) { return crCaught[formOf(sel, si)]; }) ? D.fact : 'Fang den for at høre mere om den.') + '</p><div class="row"><button class="pbtn" id="dexBack">◀ Tilbage</button></div>';
+    } else {
+      h += '<div class="grid dex">' + LINES.map(function (D, li) { var f = formOf(li, 0), known = D.names.some(function (n, si) { return crSeen[formOf(li, si)]; }), got = D.names.some(function (n, si) { return crCaught[formOf(li, si)]; }); return '<div class="it" data-dx="' + li + '" style="background-image:url(' + crPic(f, !known) + ');background-size:100%"><em>' + (got ? '🟢' : '') + '</em></div>'; }).join('') + '</div>';
+    }
+    ov.innerHTML = h + '</div>'; ov.hidden = false; tap($('#oX'), closeOv);
+    if ($('#dexBack')) tap($('#dexBack'), function () { openDex(); });
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-dx]'), function (el) { tap(el, function () { openDex(+el.dataset.dx); }); });
+  }
+
   var saveTimer = 0;
-  function saveNow() { if (wiping) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify({ seed: seed, edits: edits, p: [player.x, player.y, player.z, player.yaw, player.pitch], hp: player.hp, inv: inv, hot: hot, sel: selected, wear: wear, gear: gear, day: dayT, cr: creative, pe: peaceful, sp: spawnPt, kid: kid, mi: mIndex, st: stars, sn: siteNo, fl: flags, wp: waypoints, base: base, mb: mission && mission.before, mu: musicOn, so: soundOn, vr: RENDER })); } catch (e) { /* storage full or off */ } }
+  function saveNow() { if (wiping) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify({ seed: seed, edits: edits, p: [player.x, player.y, player.z, player.yaw, player.pitch], hp: player.hp, inv: inv, hot: hot, sel: selected, wear: wear, gear: gear, day: dayT, cr: creative, pe: peaceful, sp: spawnPt, kid: kid, mi: mIndex, st: stars, sn: siteNo, fl: flags, wp: waypoints, base: base, mb: mission && mission.before, mu: musicOn, so: soundOn, vr: RENDER, cr: [crTeam, crBox, crSeen, crCaught, crUid, caughtTotal] })); } catch (e) { /* storage full or off */ } }
   function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 700); }
   addEventListener('visibilitychange', function () { if (document.hidden) saveNow(); }); addEventListener('pagehide', saveNow);
 
@@ -1593,7 +2061,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   if (saved && typeof saved.seed === 'number') {
     seed = saved.seed; edits = saved.edits || {}; inv = saved.inv || {}; if (saved.hot && saved.hot.length === hot.length) hot = saved.hot; selected = saved.sel || 0; if (saved.wear) wear = saved.wear; if (saved.gear) for (var gk in gear) gear[gk] = saved.gear[gk] || 0;
     dayT = saved.day || 0.04; creative = !!saved.cr; peaceful = !!saved.pe; player.hp = saved.hp || 20;
-    kid = saved.kid !== false; mIndex = saved.mi || 0; stars = saved.st || 0; siteNo = saved.sn || 0; flags = saved.fl || {}; waypoints = saved.wp || []; base = saved.base || null; musicOn = saved.mu !== false; soundOn = saved.so !== false; if (saved.vr) setView(saved.vr);
+    kid = saved.kid !== false; mIndex = saved.mi || 0; stars = saved.st || 0; siteNo = saved.sn || 0; flags = saved.fl || {}; waypoints = saved.wp || []; base = saved.base || null; if (saved.cr) { crTeam = saved.cr[0] || []; crBox = saved.cr[1] || []; crSeen = saved.cr[2] || {}; crCaught = saved.cr[3] || {}; crUid = saved.cr[4] || 1; caughtTotal = saved.cr[5] || 0; } musicOn = saved.mu !== false; soundOn = saved.so !== false; if (saved.vr) setView(saved.vr);
   } else { saved = null; seed = Math.floor(Math.random() * 1e9); }
   // a good place to start: dry land near the middle
   function findStart() { var ox = Math.round((Math.random() - 0.5) * 40000), oz = Math.round((Math.random() - 0.5) * 40000); for (var r = 0; r < 600; r += 3) for (var a = 0; a < 8; a++) { var x = ox + Math.round(Math.cos(a * 0.785) * r), z = oz + Math.round(Math.sin(a * 0.785) * r), h = colHeight(x, z); var bm = biomeAt(x, z); if (h > SEA + 1 && h < 44 && (bm === PLAINS || bm === FOREST) && !isCave(x, h, z, h) && !isTree(x, z, h)) return [x + 0.5, h + 1.05, z + 0.5]; } return [ox + 0.5, 60, oz + 0.5]; }
@@ -1607,7 +2075,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   drawHotbar(); resize(); $('#load').remove();
   if (!saved) setTimeout(function () { say('Velkommen! Følg missionen øverst ⭐'); }, 800);
 
-  var last = performance.now(), saveClock = 0, regenT = 0, fallV = 0, lavaT = 0, tipT = 0;
+  var leadT = 0, last = performance.now(), saveClock = 0, regenT = 0, fallV = 0, lavaT = 0, tipT = 0;
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000); last = now;
     streamWorld(2);
@@ -1621,7 +2089,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
       fallV = moveBody(player, dt, mx * cs + my * sn, -mx * sn + my * cs, jumpHeld || keys.Space, SPEED);
       if (fallV < -15 && !player.inWater && !kid) hurt((-fallV - 13) * 0.9);
       if (player.y < -20) { player.x = spawnPt[0]; player.y = spawnPt[1]; player.z = spawnPt[2]; player.vy = 0; }
-      popT -= dt; musicTick(dt);
+      popT -= dt; musicTick(dt); updateBattle(dt, now / 1000); restTeam(dt); if ((leadT -= dt) <= 0) { leadT = 1; syncLead(); }
       if (player.ground && Math.hypot(player.vx, player.vz) > 1 && (stepD += Math.hypot(player.vx, player.vz) * dt) > 1.9) { stepD = 0; sfxMat(getBlock(Math.floor(player.x), Math.floor(player.y - 0.2), Math.floor(player.z)) || DIRT, 0.22); }
       if (player.inLava && (lavaT -= dt) <= 0) { lavaT = 0.7; hurt(kid ? 1 : 3); say('Av, lava! Kom op! 🔥'); }
       if ((regenT -= dt) <= 0 && player.hp < 20 && !creative) { regenT = 4; player.hp = Math.min(20, player.hp + 1); drawHotbar(); }
@@ -1639,7 +2107,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     // holding Hak: hit the monster you look at, or hack on the block until it breaks
     var progress = 0; hitCool -= dt; breakCool -= dt;
     if (mining && !paused) {
-      if (aimMon) { if (hitCool <= 0) { hitCool = 0.4; hitMonster(aimMon); } mineT = 0; }
+      if (aimMon) { if (hitCool <= 0) { hitCool = 0.4; if (aimMon.wild) flags.fought = 1; hitMonster(aimMon); } mineT = 0; }
       else if (aim) {
         if (creative) { if (breakCool <= 0) { breakCool = 0.22; breakBlock(); } }
         else if (aim.b === BEDROCK) { if (breakCool <= 0) { breakCool = 1.5; say('Grundfjeldet kan ikke hakkes'); } }
@@ -1649,7 +2117,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     }
     $('#prog').style.display = progress > 0 ? 'block' : 'none'; if (progress > 0) $('#prog').firstChild.style.width = Math.round(progress * 100) + '%';
     updateCrumbs(dt);
-    updateHand(dt, movingNow && !paused); showGlows(now / 1000);
+    updateHand(dt, movingNow && !paused); showGlows(now / 1000); updateFloaters(dt); updateSkyBits(dt, now / 1000);
     renderer.clear(); renderer.render(scene, camera); renderer.clearDepth(); renderer.render(handScene, handCam);
     if ((saveClock += dt) > 8) { saveClock = 0; saveSoon(); }
     requestAnimationFrame(frame);
@@ -1657,7 +2125,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   requestAnimationFrame(frame);
 
   // for automated checks
-  window.__KLODS__ = { get mission() { return mission; }, get mIndex() { return mIndex; }, get stars() { return stars; }, get building() { return !!buildJob; }, get waypoints() { return waypoints; }, get spawn() { return spawnPt; }, get kid() { return kid; }, missionAt: missionAt, TELE: TELE, get paused() { return paused; }, get aimMon() { return aimMon; }, MOD: MOD, B: B, readModPack: readModPack, openModPanel: openModPanel, gear: gear, bestTool: bestTool, handId: handId, betterGear: betterGear, SHOVEL: SHOVEL, AXE: AXE, get goals() { return goals; }, glows: glows, breakTime: breakTime, get misText() { return misText; }, biomeAt: biomeAt, colHeight: colHeight, KINDS: KINDS, openTrade: openTrade, MEAT: MEAT, WH: WH, setView: setView, get view() { return RENDER; }, topOf: topOf, setKid: function (k) { kid = k; }, openMap: openMap, needRows: needRows,
+  window.__KLODS__ = { get mission() { return mission; }, get mIndex() { return mIndex; }, get stars() { return stars; }, get building() { return !!buildJob; }, get waypoints() { return waypoints; }, get spawn() { return spawnPt; }, get kid() { return kid; }, missionAt: missionAt, TELE: TELE, crTeam: function () { return crTeam; }, crBox: function () { return crBox; }, get battle() { return battle; }, LINES: LINES, CF: CF, startBattle: startBattle, throwBall: throwBall, trySpawnWild: trySpawnWild, crKind: crKind, makeCr: makeCr, BALL: BALL, evolveCheck: evolveCheck, crPic: crPic, openDex: openDex, get caughtTotal() { return caughtTotal; }, stars3: function () { return stars; }, sky: { clouds: clouds, stars: stars }, get paused() { return paused; }, get aimMon() { return aimMon; }, MOD: MOD, B: B, readModPack: readModPack, openModPanel: openModPanel, gear: gear, bestTool: bestTool, handId: handId, betterGear: betterGear, SHOVEL: SHOVEL, AXE: AXE, get goals() { return goals; }, glows: glows, breakTime: breakTime, get misText() { return misText; }, biomeAt: biomeAt, colHeight: colHeight, KINDS: KINDS, openTrade: openTrade, MEAT: MEAT, WH: WH, setView: setView, get view() { return RENDER; }, topOf: topOf, setKid: function (k) { kid = k; }, openMap: openMap, needRows: needRows,
     player: player, getBlock: getBlock, setBlock: setBlock, target: function () { return aim; }, hits: function (x, y, z) { return hits(player, x, y, z); }, give: give, count: count, craft: craft, RECIPES: RECIPES,
     spawnMonster: spawnMonster, monsters: monsters, setDay: function (t) { dayT = t; }, light: function () { return dayLight; }, lightAt: lightAt, chunks: chunks, hot: hot, wear: wear, useFromBag: useFromBag, hurt: hurt, armorPoints: armorPoints, save: saveNow,
     ids: { COAL: COAL, LOG: LOG, PLANKS: PLANKS, STICK: STICK, BENCH: BENCH, TORCH: TORCH, COBBLE: COBBLE, IRON: IRON, PICK: PICK, SWORD: SWORD, HELM: HELM, CHEST: CHEST, DIRT: DIRT }, setMode: function (c, p) { creative = c; peaceful = p; drawHotbar(); } };
