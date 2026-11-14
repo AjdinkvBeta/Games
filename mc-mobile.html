@@ -89,6 +89,8 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 #cross{width:20px;height:20px;margin:-10px}#cross::before{left:9px;top:2px;height:16px}#cross::after{left:2px;top:9px;width:16px}
 #rot{display:none;position:fixed;inset:0;z-index:30;background:#10141c;color:#fff;font:700 20px system-ui,sans-serif;align-items:center;justify-content:center;text-align:center;padding:20px}
 @media (orientation:landscape) and (pointer:coarse){#rot{display:flex}}
+.me .grid{grid-template-columns:repeat(4,1fr)!important}.it.gs{border-style:dashed}.it small{position:absolute;left:0;right:0;bottom:-1px;text-align:center;font:600 8px system-ui,sans-serif;color:#aab}
+#top button{position:relative}#top button::after{content:'';position:absolute;inset:-7px}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:#7ec0ee;color:#fff;font:700 22px system-ui,sans-serif;z-index:20;text-align:center;padding:20px}
 </style>
 </head>
@@ -121,7 +123,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   var AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, LOG = 4, LEAVES = 5, SAND = 6, BEDROCK = 7, WATER = 8, PLANKS = 9, COBBLE = 10,
     COAL_ORE = 11, IRON_ORE = 12, GOLD_ORE = 13, CRYS_ORE = 14, GLASS = 15, TORCH = 17, BENCH = 18, FURNACE = 19, BED = 20, SNOW = 21, TELE = 22, CACTUS = 23, ICE = 24, LAVA = 25, PINE = 26, DRYGRASS = 27, REDROCK = 28;
   var STICK = 100, COAL = 101, IRON = 102, GOLD = 103, CRYSTAL = 104, APPLE = 105, MEAT = 106, WOOL = 107;
-  var PICK = 110, AXE = 120, SWORD = 130, HELM = 140, CHEST = 150, LEGS = 160, BOOTS = 170; // + tier
+  var PICK = 110, AXE = 120, SWORD = 130, HELM = 140, CHEST = 150, LEGS = 160, BOOTS = 170, SHOVEL = 180; // + tier
   // block: n name, t pictures [top, bottom, side], h seconds to break by hand, tool that helps, tier of pickaxe needed, d what it drops
   var B = {};
   B[GRASS] = { n: 'Græs', t: [0, 2, 1], h: 0.6, d: DIRT }; B[DIRT] = { n: 'Jord', t: [2, 2, 2], h: 0.6 };
@@ -136,6 +138,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   B[BED] = { n: 'Seng', t: [22, 10, 23], h: 0.8 }; B[SNOW] = { n: 'Sne', t: [24, 2, 25], h: 0.5 }; B[TELE] = { n: 'Teleportsten', t: [26, 11, 27], h: 1.2, tool: 'pick' };
   B[CACTUS] = { n: 'Kaktus', t: [28, 28, 28], h: 0.5 }; B[ICE] = { n: 'Is', t: [29, 29, 29], h: 0.6, tool: 'pick' }; B[LAVA] = { n: 'Lava', t: [30, 30, 30], h: Infinity };
   B[PINE] = { n: 'Grannåle', t: [31, 31, 31], h: 0.3 }; B[DRYGRASS] = { n: 'Tørt græs', t: [21, 2, 32], h: 0.6, d: DIRT }; B[REDROCK] = { n: 'Rød klippe', t: [33, 33, 33], h: 2.6, tool: 'pick' };
+  [GRASS, DIRT, SAND, SNOW, DRYGRASS].forEach(function (b) { B[b].tool = 'shovel'; });
   var OPAQUE = [], SOLID = [];
   for (var bi = 0; bi < 32; bi++) { OPAQUE[bi] = !!B[bi] && bi !== WATER && bi !== GLASS && bi !== TORCH; SOLID[bi] = !!B[bi] && bi !== WATER && bi !== TORCH && bi !== LAVA; }
   var TIER = ['Træ', 'Sten', 'Jern', 'Guld', 'Krystal'], TIER_COL = ['#a07840', '#8c8c90', '#dcdce0', '#f0c830', '#50e0e0'], TIER_MAT = [PLANKS, COBBLE, IRON, GOLD, CRYSTAL];
@@ -146,7 +149,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     if (B[id]) return B[id].n;
     if (id === STICK) return 'Pind'; if (id === COAL) return 'Kul'; if (id === IRON) return 'Jernbarre'; if (id === GOLD) return 'Guldbarre'; if (id === CRYSTAL) return 'Krystal'; if (id === APPLE) return 'Æble'; if (id === MEAT) return 'Kød'; if (id === WOOL) return 'Uld';
     var base = Math.floor(id / 10) * 10, t = id % 10;
-    if (base === PICK) return TIER[t] + 'hakke'; if (base === AXE) return TIER[t] + 'økse'; if (base === SWORD) return TIER[t] + 'sværd';
+    if (base === PICK) return TIER[t] + 'hakke'; if (base === AXE) return TIER[t] + 'økse'; if (base === SWORD) return TIER[t] + 'sværd'; if (base === SHOVEL) return TIER[t] + 'skovl';
     if (base === HELM) return ATIER[t] + 'hjelm'; if (base === CHEST) return ATIER[t] + 'brynje'; if (base === LEGS) return ATIER[t] + 'bukser'; if (base === BOOTS) return ATIER[t] + 'støvler';
     return '?';
   }
@@ -158,7 +161,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     { out: [TORCH, 4], cost: [[COAL, 1], [STICK, 1]], st: '' }, { out: [TELE, 1], cost: [[COBBLE, 4], [COAL, 1]], st: '' }, { out: [FURNACE, 1], cost: [[COBBLE, 8]], st: 'bench' }, { out: [BED, 1], cost: [[PLANKS, 3], [LEAVES, 3]], st: 'bench' }
   ];
   TIER_MAT.forEach(function (m, t) {
-    RECIPES.push({ out: [PICK + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [AXE + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [SWORD + t, 1], cost: [[m, 2], [STICK, 1]], st: 'bench' });
+    RECIPES.push({ out: [SHOVEL + t, 1], cost: [[m, 1], [STICK, 2]], st: '' }, { out: [PICK + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [AXE + t, 1], cost: [[m, 3], [STICK, 2]], st: 'bench' }, { out: [SWORD + t, 1], cost: [[m, 2], [STICK, 1]], st: 'bench' });
   });
   ATIER_MAT.forEach(function (m, t) {
     RECIPES.push({ out: [HELM + t, 1], cost: [[m, 5]], st: 'bench' }, { out: [CHEST + t, 1], cost: [[m, 8]], st: 'bench' }, { out: [LEGS + t, 1], cost: [[m, 7]], st: 'bench' }, { out: [BOOTS + t, 1], cost: [[m, 4]], st: 'bench' });
@@ -235,7 +238,8 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     var C = ['mmm..mm..mmm', 'mmmmmmmmmmmm', 'mmmmmmmmmmmm', '.mmmmmmmmmm.', '.mmmmmmmmmm.', '.mmmmmmmmmm.', '.mmmmmmmmmm.', '.mmmmmmmmmm.'];
     var Lg = ['mmmmmmmmmm', 'mmmmmmmmmm', 'mmmmmmmmmm', 'mmmm..mmmm', 'mmmm..mmmm', 'mmmm..mmmm', 'mmmm..mmmm', 'mmmm..mmmm', 'mmmm..mmmm'];
     var Bt = ['mmm....mmm', 'mmm....mmm', 'mmm....mmm', 'mmmm..mmmm', 'mmmmm.mmmmm'];
-    TIER_COL.forEach(function (col, t) { var k = { m: col, h: wood }; ICONS[PICK + t] = art(P, k); ICONS[AXE + t] = art(A, k); ICONS[SWORD + t] = art(S, k); });
+    var Sh = ['........mm', '.......mmm', '......mmmm', '.....hmmm.', '....h.mm..', '...h......', '..h.......', '.h........', 'h.........'];
+    TIER_COL.forEach(function (col, t) { var k = { m: col, h: wood }; ICONS[SHOVEL + t] = art(Sh, k); ICONS[PICK + t] = art(P, k); ICONS[AXE + t] = art(A, k); ICONS[SWORD + t] = art(S, k); });
     ATIER_COL.forEach(function (col, t) { var k = { m: col }; ICONS[HELM + t] = art(H, k); ICONS[CHEST + t] = art(C, k); ICONS[LEGS + t] = art(Lg, k); ICONS[BOOTS + t] = art(Bt, k); });
     ICONS[STICK] = art(['........hh', '.......hh.', '......hh..', '.....hh...', '....hh....', '...hh.....', '..hh......', '.hh.......', 'hh........'], { h: wood });
     ICONS[COAL] = art(['..kkkk..', '.kkkkkk.', 'kkgkkkkk', 'kkkkkgkk', 'kkkkkkkk', '.kkkkkk.', '..kkkk..'], { k: '#26262a', g: '#4a4a52' });
@@ -535,14 +539,27 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     r.cost.forEach(function (c) { take(c[0], c[1]); }); give(r.out[0], r.out[1]); say('Du lavede ' + itemName(r.out[0]) + (r.out[1] > 1 ? ' ×' + r.out[1] : '')); saveSoon(); return true;
   }
   function closeOv() { $('#ov').hidden = true; $('#ov').innerHTML = ''; ovKind = ''; paused = false; misT = 0; setHint(null); }
-  function tap(el, fn) { el.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); }
+  var lastTap = 0;
+  // inside a window: a short touch that does not move (so scrolling still works); it also works while another finger is down
+  function tap(el, fn) {
+    var id = null, sx = 0, sy = 0, st = 0;
+    el.addEventListener('pointerdown', function (e) { id = e.pointerId; sx = e.clientX; sy = e.clientY; st = Date.now(); });
+    el.addEventListener('pointerup', function (e) { if (e.pointerId !== id) return; id = null; if (Math.hypot(e.clientX - sx, e.clientY - sy) < 14 && Date.now() - st < 800) { e.stopPropagation(); lastTap = Date.now(); fn(); } });
+    el.addEventListener('pointercancel', function () { id = null; });
+    el.addEventListener('click', function (e) { e.stopPropagation(); if (Date.now() - lastTap > 450) fn(); });
+  }
+  // a button on the game screen: it acts as soon as it is touched
+  function press(el, fn) {
+    el.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); lastTap = Date.now(); fn(); });
+    el.addEventListener('click', function (e) { e.stopPropagation(); if (Date.now() - lastTap > 450) fn(); });
+  }
   function openBag() {
     ovKind = 'bag'; paused = true; releaseAll(); misT = 0;
     var ov = $('#ov'), ids = creative ? Object.keys(ICONS).map(Number) : Object.keys(inv).map(Number);
     ids.sort(function (a, b) { return a - b; });
     var h = '<div class="panel"><h2>🎒 Taske <button class="pbtn" id="oX">✕</button></h2>';
-    h += '<h3>Det er dig</h3><div class="me"><img src="' + charPic() + '" alt=""><div class="grid">' + ['head', 'chest', 'legs', 'feet'].map(function (s) { var id = wear[s]; return '<div class="it" data-w="' + s + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"></div>'; }).join('') + '</div></div>';
-    h += '<h3>Dine ting</h3><p>Tryk på en ting for at lægge den i den valgte plads forneden. Rustning tager du på, og æbler spiser du.</p><div class="grid">' + (ids.length ? ids.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"><em>' + (creative ? '' : inv[id]) + '</em></div>'; }).join('') : '') + '</div>' + (ids.length ? '' : '<p>Tasken er tom. Hak nogle klodser!</p>');
+    h += '<h3>Det er dig</h3><div class="me"><img src="' + charPic() + '" alt=""><div class="grid">' + ['head', 'chest', 'legs', 'feet'].map(function (s) { var id = wear[s]; return '<div class="it" data-w="' + s + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"></div>'; }).join('') + ['pick', 'axe', 'shovel', 'sword'].map(function (k) { var id = gear[k]; return '<div class="it gs" data-g="' + k + '" style="background-image:' + (id ? 'url(' + ICONS[id] + ')' : 'none') + '"><small>' + GEAR_NAME[k] + '</small></div>'; }).join('') + '</div></div>';
+    h += '<h3>Dine ting</h3><p>Tryk på værktøj, våben og rustning for at tage det på. Så bruges det rigtige af sig selv. Klodser lægges i pladsen forneden, og mad spiser du.</p><div class="grid">' + (ids.length ? ids.map(function (id) { return '<div class="it' + (hot[selected] === id ? ' on' : '') + '" data-i="' + id + '" style="background-image:url(' + ICONS[id] + ')"><em>' + (creative ? '' : inv[id]) + '</em></div>'; }).join('') : '') + '</div>' + (ids.length ? '' : '<p>Tasken er tom. Hak nogle klodser!</p>');
     h += '<h3>Det kan du lave</h3>';
     var order = RECIPES.map(function (r, i) { return i; }).sort(function (a, b) { return (canMake(RECIPES[b]) && stationOk(RECIPES[b]) ? 1 : 0) - (canMake(RECIPES[a]) && stationOk(RECIPES[a]) ? 1 : 0); });
     h += order.map(function (i) {
@@ -554,11 +571,14 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     tap($('#oX'), closeOv);
     Array.prototype.forEach.call(ov.querySelectorAll('[data-i]'), function (el) { tap(el, function () { useFromBag(+el.dataset.i); }); });
     Array.prototype.forEach.call(ov.querySelectorAll('[data-w]'), function (el) { tap(el, function () { var s = el.dataset.w; if (wear[s]) { give(wear[s], 1); wear[s] = 0; drawHotbar(); openBag(); } }); });
+    Array.prototype.forEach.call(ov.querySelectorAll('[data-g]'), function (el) { tap(el, function () { var k = el.dataset.g; if (gear[k]) { var id = gear[k]; gear[k] = 0; give(id, 1); drawHotbar(); openBag(); } }); });
     Array.prototype.forEach.call(ov.querySelectorAll('[data-r]'), function (el) { tap(el, function () { var sc = ov.firstChild.scrollTop; craft(+el.dataset.r); openBag(); $('#ov').firstChild.scrollTop = sc; }); });
   }
   function useFromBag(id) {
     var ab = armorBase(id);
-    if (ab) { var s = ARMOR_SLOT[ab]; if (wear[s]) give(wear[s], 1); wear[s] = id; take(id, 1); say('Du tog ' + itemName(id) + ' på'); }
+    var tk = toolKind(id);
+    if (ab) { var s = ARMOR_SLOT[ab]; if (wear[s]) give(wear[s], 1); wear[s] = id; take(id, 1); say('Du tog ' + itemName(id) + ' på'); tone(500, 0.1, 0.1, 'triangle', 760); }
+    else if (tk) { var old = gear[tk]; gear[tk] = id; take(id, 1); if (old) give(old, 1); say(itemName(id) + ' er nu på dig. Den bruges af sig selv!'); tone(500, 0.1, 0.1, 'triangle', 760); }
     else if ((id === APPLE || id === MEAT) && !creative && player.hp < 20) { eat(id); }
     else { var j = hot.indexOf(id); if (j >= 0) hot[j] = hot[selected]; hot[selected] = id; }
     drawHotbar(); saveSoon(); openBag();
@@ -588,9 +608,10 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     // a wholly new world: new land, new start place, and you start again with empty hands
     tap($('#mNew'), function () { if (!armed) { armed = true; $('#mNew').textContent = 'Tryk igen: alt bliver slettet'; return; } wiping = true; clearTimeout(saveTimer); try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* no storage */ } location.reload(); });
   }
-  $('#ov').addEventListener('click', function (e) { if (e.target === $('#ov')) closeOv(); }); // a tap beside the window closes it
-  $('#bBag').addEventListener('click', function () { if (ovKind === 'bag') closeOv(); else openBag(); });
-  $('#bMenu').addEventListener('click', function () { if (ovKind === 'menu') closeOv(); else openMenu(); });
+  $('#ov').addEventListener('pointerdown', function (e) { if (e.target === $('#ov')) { lastTap = Date.now(); closeOv(); } }); // a tap beside the window closes it
+  $('#ov').addEventListener('click', function (e) { if (e.target === $('#ov') && Date.now() - lastTap > 450) closeOv(); });
+  press($('#bBag'), function () { if (ovKind === 'bag') closeOv(); else openBag(); });
+  press($('#bMenu'), function () { if (ovKind === 'menu') closeOv(); else openMenu(); });
 
   /* =====================================================================
      Aiming, hacking, building, fighting
@@ -623,13 +644,22 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   var marker = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.006, 1.006, 1.006)), new THREE.LineBasicMaterial({ color: 0x111111 }));
   marker.visible = false; scene.add(marker);
   var aim = null, aimMon = null, mining = false, mineKey = '', mineT = 0, hitCool = 0, breakCool = 0;
-  function toolInfo() { var id = held(), base = Math.floor(id / 10) * 10, t = id % 10; if (base === PICK) return { kind: 'pick', t: t }; if (base === AXE) return { kind: 'axe', t: t }; if (base === SWORD) return { kind: 'sword', t: t }; return { kind: '', t: -1 }; }
+  var gear = { pick: 0, axe: 0, shovel: 0, sword: 0 }, GEAR_NAME = { pick: 'Hakke', axe: 'Økse', shovel: 'Skovl', sword: 'Sværd' };
+  function toolKind(id) { var b = Math.floor(id / 10) * 10; return b === PICK ? 'pick' : b === AXE ? 'axe' : b === SHOVEL ? 'shovel' : b === SWORD ? 'sword' : ''; }
+  function toolRank(id) { return id ? TIER_RANK[id % 10] * 10 + id % 10 : -1; }
+  /** The best tool of a kind that you carry on you or hold in your hand (0 if none). */
+  function bestTool(kind) { var a = gear[kind] || 0, h = held(); return toolKind(h) === kind && toolRank(h) > toolRank(a) ? h : a; }
+  function toolInfo(kind) { // for the block or monster in front of you; without a kind: whatever you hold
+    var id = kind ? bestTool(kind) : held(), k = toolKind(id); return k ? { kind: k, t: id % 10, id: id } : { kind: '', t: -1, id: 0 };
+  }
   function breakTime(b) {
-    var def = B[b], tool = toolInfo(), sp = 1;
+    var def = B[b], tool = toolInfo(def.tool), sp = 1;
     if (def.tool && tool.kind === def.tool) sp = TIER_SPEED[tool.t];
     return def.h / sp / (kid ? 1.6 : 1);
   }
-  function canHarvest(b) { var def = B[b]; if (!def.tier) return true; var tool = toolInfo(); return tool.kind === 'pick' && TIER_RANK[tool.t] >= def.tier; }
+  function canHarvest(b) { var def = B[b]; if (!def.tier) return true; var tool = toolInfo('pick'); return tool.kind === 'pick' && TIER_RANK[tool.t] >= def.tier; }
+  /** The thing shown in your hand right now: the tool that fits what you are hacking at, else what you hold. */
+  function handId() { if (mining && aimMon && !KINDS[aimMon.kind].trader) return bestTool('sword') || held(); if (mining && aim && B[aim.b].tool) return bestTool(B[aim.b].tool) || held(); return held(); }
   function breakBlock() {
     if (!aim) return; var b = aim.b;
     if (b === BEDROCK) { say('Grundfjeldet kan ikke hakkes'); return; }
@@ -834,7 +864,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   function hitMonster(m) {
     var K = KINDS[m.kind];
     if (K.trader) { say('Købmanden vil hellere bytte. Sigt på ham, og tryk 🧱 Byg'); return; }
-    var tool = toolInfo(), dmg = tool.kind === 'sword' ? SWORD_DMG[tool.t] : tool.kind === 'axe' ? 3 : tool.kind === 'pick' ? 2 : 1;
+    var tool = toolInfo('sword'); if (!tool.kind) tool = toolInfo(); var dmg = tool.kind === 'sword' ? SWORD_DMG[tool.t] : tool.kind === 'axe' ? 3 : tool.kind === 'pick' ? 2 : 1;
     if (creative) dmg = 99;
     m.hp -= dmg; m.flash = 0.2; m.fleeT = 4; var dx = m.x - player.x, dz = m.z - player.z, l = Math.hypot(dx, dz) || 1; m.vx = dx / l * 7; m.vz = dz / l * 7; m.vy = 4.5; m.ground = false;
     burst(m.x - 0.5, m.y, m.z - 0.5, 0, K.col); thud(500, 0.1, 0.5); if (K.snd) tone(K.snd[0] * 1.3, K.snd[1], 0.08, 'square', K.snd[0] * 0.7);
@@ -966,7 +996,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
      ===================================================================== */
   var kid = true, mIndex = 0, stars = 0, siteNo = 0, flags = {}, waypoints = [], base = null, mission = null, buildQ = [], buildJob = null, goal = null, misT = 0, findT = 0, findFor = -1, hintEl = null, hintRecipe = -1, lastMis = '';
   function recipeFor(id) { for (var i = 0; i < RECIPES.length; i++) if (RECIPES[i].out[0] === id) return i; return -1; }
-  function have(id) { var n = creative ? 0 : (inv[id] || 0); for (var s in wear) if (wear[s] === id) n++; return n; }
+  function have(id) { var n = creative ? 0 : (inv[id] || 0); for (var s in wear) if (wear[s] === id) n++; for (var k in gear) if (gear[k] === id) n++; return n; }
   var SRC = {}; SRC[COBBLE] = STONE; SRC[COAL] = COAL_ORE; SRC[CRYSTAL] = CRYS_ORE; SRC[APPLE] = LEAVES;
   function sourceOf(id) { return SRC[id] || (B[id] ? id : 0); }
   var CHAIN = [
@@ -975,6 +1005,8 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     { type: 'craft', title: 'Lav pinde', want: [[STICK, 4]] },
     { type: 'craft', title: 'Lav en træhakke', want: [[PICK, 1]] },
     { type: 'build', title: 'Byg dit hjem', build: 'home', want: [[LOG, 4], [PLANKS, 16]] },
+    { type: 'craft', title: 'Lav en træskovl', want: [[SHOVEL, 1]] },
+    { type: 'craft', title: 'Lav en træøkse', want: [[AXE, 1]] },
     { type: 'collect', title: 'Hak sten', want: [[COBBLE, 12]] },
     { type: 'craft', title: 'Lav en stenhakke', want: [[PICK + 1, 1]] },
     { type: 'craft', title: 'Lav et stensværd', want: [[SWORD + 1, 1]] },
@@ -992,7 +1024,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     { type: 'craft', title: 'Lav en jernhjelm', want: [[HELM, 1]] },
     { type: 'build', title: 'Byg et drivhus', build: 'greenhouse', want: [[GLASS, 16], [PLANKS, 8]] }
   ];
-  var EXTRA = [CHEST, LEGS, BOOTS, AXE + 2, PICK + 3, SWORD + 3, HELM + 1, PICK + 4, SWORD + 4, HELM + 2, CHEST + 2, LEGS + 2, BOOTS + 2];
+  var EXTRA = [CHEST, LEGS, BOOTS, SHOVEL + 1, AXE + 2, SHOVEL + 2, PICK + 3, SWORD + 3, HELM + 1, PICK + 4, SWORD + 4, HELM + 2, CHEST + 2, LEGS + 2, BOOTS + 2];
   var KINDS_B = [['house2', 'et stort hus', [[LOG, 8], [PLANKS, 30], [GLASS, 4]]], ['lighthouse', 'et fyrtårn', [[COBBLE, 50], [GLASS, 8], [TORCH, 4]]], ['well', 'en brønd', [[COBBLE, 12], [LOG, 4]]],
     ['workshop', 'et værksted', [[COBBLE, 20], [PLANKS, 8]]], ['tower', 'et tårn', [[COBBLE, 40], [TORCH, 4]]], ['greenhouse', 'et drivhus', [[GLASS, 16], [PLANKS, 8]]]];
   /** Mission number n: first the fixed road (wood, tools, home, stone, ...), then for ever: better gear and new buildings. */
@@ -1032,28 +1064,47 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     var d = B[blockId]; if (!d || d.tool !== 'pick') return 0; // wood and earth need no tool
     return PICK + (d.tier || 0);
   }
-  function toolGood(want) { // do you hold a tool at least as good as the wanted one?
-    if (!want) return true; var id = held(), base0 = Math.floor(want / 10) * 10; if (Math.floor(id / 10) * 10 !== base0) return false;
-    return base0 === AXE || TIER_RANK[id % 10] >= TIER_RANK[want % 10];
+  function toolGood(want) { // do you carry (or hold) a tool at least as good as the wanted one?
+    if (!want) return true; var id = bestTool(toolKind(want)); return !!id && TIER_RANK[id % 10] >= TIER_RANK[want % 10];
   }
-  function ownGood(want) { for (var i = 0; i < 5; i++) { var id = Math.floor(want / 10) * 10 + i; if (count(id) > 0 && (Math.floor(want / 10) * 10 === AXE || TIER_RANK[i] >= TIER_RANK[want % 10])) return id; } return 0; }
+  function ownGood(want) { for (var i = 4; i >= 0; i--) { var id = Math.floor(want / 10) * 10 + i; if (count(id) > 0 && TIER_RANK[i] >= TIER_RANK[want % 10]) return id; } return 0; }
+  /** Something in the bag that is better than what you have on: a tool, a weapon or a piece of armour (0 if nothing). */
+  function betterGear() {
+    for (var key in inv) { var id = +key, k = toolKind(id), ab = armorBase(id);
+      if (k && toolRank(id) > toolRank(gear[k])) return id;
+      if (ab) { var w = wear[ARMOR_SLOT[ab]]; if (!w || ARMOR_PTS[ab][id % 10] > ARMOR_PTS[ab][w % 10]) return id; } }
+    return 0;
+  }
   var siteCache = [];
   function onSite(x, z) { while (siteCache.length < siteNo + 1) siteCache.push(sitePos(siteCache.length + 1)); for (var q = 0; q < siteCache.length; q++) if (Math.abs(x - siteCache[q].x) <= 7 && Math.abs(z - siteCache[q].z) <= 8) return true; return false; }
-  function findNearest(b) { // the nearest block of this kind in the chunks around you (a little rather one you can see)
-    var px = player.x, py = player.y + 1, pz = player.z, pcx = Math.floor(px) >> 4, pcz = Math.floor(pz) >> 4, best = 1e9, out = null;
+  function findNearest(b) { // the nearest blocks of this kind around you (a little rather ones you can see), nearest first
+    var px = player.x, py = player.y + 1, pz = player.z, pcx = Math.floor(px) >> 4, pcz = Math.floor(pz) >> 4, list = [], worst = 1e9;
     for (var a = -2; a <= 2; a++) for (var e = -2; e <= 2; e++) {
       var c = chunks.get(ckey(pcx + a, pcz + e)); if (!c) continue; var d = c.data, x0 = c.cx * CS, z0 = c.cz * CS;
       for (var i = 0; i < d.length; i++) {
         if (d[i] !== b) continue;
         var x = x0 + (i & 15), z = z0 + ((i >> 4) & 15), y = i >> 8; if (onSite(x, z)) continue;
         var dist = Math.abs(x + 0.5 - px) + Math.abs(y + 0.5 - py) * 1.5 + Math.abs(z + 0.5 - pz);
-        if (dist >= best) continue;
+        if (dist >= worst) continue;
         var open = !OPAQUE[getBlock(x + 1, y, z)] || !OPAQUE[getBlock(x - 1, y, z)] || !OPAQUE[getBlock(x, y + 1, z)] || !OPAQUE[getBlock(x, y, z + 1)] || !OPAQUE[getBlock(x, y, z - 1)];
-        if (!open) dist += 6; if (dist < best) { best = dist; out = { x: x, y: y, z: z }; }
+        if (!open) dist += 6; if (dist >= worst) continue;
+        list.push({ x: x, y: y, z: z, d: dist }); if (list.length > 24) { list.sort(function (p, q) { return p.d - q.d; }); list.length = GLOWS; worst = list[GLOWS - 1].d; }
       }
     }
-    return out;
+    list.sort(function (p, q) { return p.d - q.d; }); list.length = Math.min(list.length, GLOWS);
+    return list;
   }
+  var GLOWS = 6, glows = [], goals = [];
+  (function () {
+    var geo = new THREE.BoxGeometry(1.06, 1.06, 1.06), edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.08, 1.08, 1.08));
+    for (var i = 0; i < GLOWS; i++) {
+      var g = new THREE.Group();
+      var fill = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffe060, transparent: true, opacity: 0.22, depthTest: false, depthWrite: false, fog: false }));
+      var line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xfff2a0, transparent: true, opacity: 0.9, depthTest: false, fog: false }));
+      fill.renderOrder = 20; line.renderOrder = 21; g.add(fill, line); g.visible = false; scene.add(g); glows.push(g);
+    }
+  })();
+  function showGlows(t) { for (var i = 0; i < GLOWS; i++) { var g = glows[i], p = goals[i]; g.visible = !!p && kid && !creative; if (!g.visible) continue; g.position.set(p.x + 0.5, p.y + 0.5, p.z + 0.5); var k = 0.5 + 0.5 * Math.sin(t * 4 + i); g.children[0].material.opacity = (i === 0 ? 0.3 : 0.14) + k * 0.12; g.children[1].material.opacity = i === 0 ? 1 : 0.55; } }
   var beacon = new THREE.Group();
   beacon.add(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 60, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xffe060, transparent: true, opacity: 0.32, depthWrite: false, fog: false, side: THREE.DoubleSide })));
   beacon.children[0].position.y = 30; beacon.visible = false; scene.add(beacon);
@@ -1072,13 +1123,13 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   function sfxStar() { try { var A = sfxStar.a || (sfxStar.a = new (window.AudioContext || window.webkitAudioContext)()); [523, 659, 784, 1047].forEach(function (f, i) { var o = A.createOscillator(), g = A.createGain(); o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, A.currentTime + i * 0.09); g.gain.exponentialRampToValueAtTime(0.12, A.currentTime + i * 0.09 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, A.currentTime + i * 0.09 + 0.25); o.connect(g); g.connect(A.destination); o.start(A.currentTime + i * 0.09); o.stop(A.currentTime + i * 0.09 + 0.3); }); } catch (e) { /* no sound */ } }
   /** Twice a second: is the mission done, what should the child do now, and which button should glow? */
   var misText = '';
-  $('#mis').addEventListener('click', function () { if (misText) say(misText); });
+  press($('#mis'), function () { if (misText) say(misText); });
   function tickMission(dt) {
     var el = $('#mis');
-    if (!kid || creative) { el.hidden = true; beacon.visible = sitePad.visible = false; setHint(null); return; }
+    if (!kid || creative) { el.hidden = true; beacon.visible = sitePad.visible = false; goals = []; setHint(null); return; }
     if ((misT -= dt) > 0) return; misT = 0.4;
     if (!mission) setMission(false);
-    var m = mission, rows = needRows(m), i, html = '<b>⭐' + stars + '</b>', guide = '', arrow = '', hint = null, tgt = null, wantTool = 0;
+    var m = mission, rows = needRows(m), i, html = '<b>⭐' + stars + '</b>', guide = '', arrow = '', hint = null, tgt = null, wantTool = 0, keepGlow = false;
     hintRecipe = -1;
     if (buildJob) { guide = '🔨 Bygger… se bare!'; }
     else if (m.type === 'place') {
@@ -1099,16 +1150,22 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
         if (d < 4.5 && !paused && chunkAt(S.x >> 4, S.z >> 4)) { m.want.forEach(function (w) { take(w[0], w[1]); }); startBuild(m.build, S); }
       } else if (raw) {
         hintRecipe = -1; var src = sourceOf(raw.id); wantTool = pickFor(src);
-        if (findFor !== src || (findT -= 0.4) <= 0 || (goal && getBlock(goal.x, goal.y, goal.z) !== src)) { findFor = src; findT = 2.4; goal = findNearest(src); }
-        tgt = goal;
+        if (findFor !== src || (findT -= 0.4) <= 0 || (goal && getBlock(goal.x, goal.y, goal.z) !== src)) { findFor = src; findT = 2.4; goals = findNearest(src); goal = goals[0] || null; }
+        keepGlow = true;
         if (goal) arrow = arrowTo(goal.x + 0.5, goal.z + 0.5);
         guide = 'Find og hak ' + B[src].n.toLowerCase() + (goal ? '' : ' – gå på opdagelse' + (B[src].tool === 'pick' && src !== STONE ? ', kig i huler og bjergsider' : ''));
-        if (wantTool && !toolGood(wantTool)) { var own = ownGood(wantTool); if (own) { hint = hotbar.children[hot.indexOf(own)] || null; if (!hint) guide = 'Læg din ' + itemName(own).toLowerCase() + ' i en plads forneden (🎒)'; } else if (B[src].tier) guide = 'Du skal først lave en ' + itemName(wantTool).toLowerCase(); }
+        if (wantTool && !toolGood(wantTool) && !ownGood(wantTool) && B[src].tier) guide = 'Du skal først lave en ' + itemName(wantTool).toLowerCase();
         if (!hint && !flags.mined) hint = $('#bBreak');
       } else if (craftRow) guide = 'Åbn tasken 🎒 og lav ' + itemName(craftRow.id).toLowerCase();
       else guide = 'Du mangler noget endnu';
       if (wantTool && !toolGood(wantTool)) html += '<span class="chip">Brug <img src="' + ICONS[wantTool] + '"></span>';
     }
+    var up = betterGear();
+    if (up && !buildJob) { // something better lies in the bag: show the way to put it on
+      html += '<span class="chip">Tag på <img src="' + ICONS[up] + '"></span>'; guide = 'Tag din ' + itemName(up).toLowerCase() + ' på: åbn tasken 🎒 og tryk på den'; hintRecipe = -1;
+      if (ovKind === 'bag') { hint = $('#ov [data-i="' + up + '"]'); } else hint = $('#bBag');
+    }
+    if (!keepGlow) goals = [];
     if (hintRecipe >= 0 && !hint) { if (ovKind === 'bag') { hint = $('#ov [data-r="' + hintRecipe + '"]'); if (hint && hintEl !== hint) hint.scrollIntoView({ block: 'center' }); } else hint = $('#bBag'); }
     setHint(paused && ovKind !== 'bag' ? null : hint);
     html += '<small>' + (arrow || '') + '</small>'; misText = m.title + ': ' + guide;
@@ -1207,7 +1264,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     hand.add(handMesh); handShown = id;
   }
   function updateHand(dt, moving) {
-    var id = held(); if (id !== handShown) showHand(id);
+    var id = handId(); if (id !== handShown) showHand(id);
     var as = handCam.aspect, hw = Math.tan(0.5236) * as, s = 0.26 * Math.min(1, as + 0.4);
     if (moving && player.ground) walkT += dt * 9;
     swing = Math.max(0, swing - dt * 4); if (mining && (aim || aimMon)) swing = Math.max(swing, 0.5 + 0.5 * Math.sin(performance.now() / 70));
@@ -1229,7 +1286,8 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     if (wear.chest) { r(ac(wear.chest), 11, 12, 12, 14); r(ac(wear.chest), 7, 12, 4, 5); r(ac(wear.chest), 23, 12, 4, 5); r('#0003', 16, 14, 2, 10); }
     if (wear.legs) { r(ac(wear.legs), 11, 26, 5, 11); r(ac(wear.legs), 18, 26, 5, 11); }
     if (wear.feet) { r(ac(wear.feet), 10, 37, 6, 7); r(ac(wear.feet), 18, 37, 6, 7); }
-    var id = held(); if (id && ICON_IMG[id] && ICON_IMG[id].complete) { g.imageSmoothingEnabled = false; g.drawImage(ICON_IMG[id], 22, 14, 14, 14); }
+    g.imageSmoothingEnabled = false; var id = gear.sword || gear.pick || gear.axe || gear.shovel || held(); if (id && ICON_IMG[id] && ICON_IMG[id].complete) g.drawImage(ICON_IMG[id], 22, 14, 14, 14);
+    var id2 = gear.sword ? (gear.pick || gear.axe || gear.shovel) : 0; if (id2 && ICON_IMG[id2] && ICON_IMG[id2].complete) g.drawImage(ICON_IMG[id2], 0, 14, 12, 12);
     return c.toDataURL();
   }
 
@@ -1260,10 +1318,10 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     ov.hidden = false; tap($('#oX'), closeOv);
     Array.prototype.forEach.call(ov.querySelectorAll('[data-tp]'), function (el) { tap(el, function () { var P = places[+el.dataset.tp]; teleportTo(P.p, P.n); }); });
   }
-  $('#bMap').addEventListener('click', function () { if (ovKind === 'map') closeOv(); else openMap(); });
+  press($('#bMap'), function () { if (ovKind === 'map') closeOv(); else openMap(); });
 
   var saveTimer = 0;
-  function saveNow() { if (wiping) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify({ seed: seed, edits: edits, p: [player.x, player.y, player.z, player.yaw, player.pitch], hp: player.hp, inv: inv, hot: hot, sel: selected, wear: wear, day: dayT, cr: creative, pe: peaceful, sp: spawnPt, kid: kid, mi: mIndex, st: stars, sn: siteNo, fl: flags, wp: waypoints, base: base, mb: mission && mission.before, mu: musicOn, so: soundOn, vr: RENDER })); } catch (e) { /* storage full or off */ } }
+  function saveNow() { if (wiping) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify({ seed: seed, edits: edits, p: [player.x, player.y, player.z, player.yaw, player.pitch], hp: player.hp, inv: inv, hot: hot, sel: selected, wear: wear, gear: gear, day: dayT, cr: creative, pe: peaceful, sp: spawnPt, kid: kid, mi: mIndex, st: stars, sn: siteNo, fl: flags, wp: waypoints, base: base, mb: mission && mission.before, mu: musicOn, so: soundOn, vr: RENDER })); } catch (e) { /* storage full or off */ } }
   function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 700); }
   addEventListener('visibilitychange', function () { if (document.hidden) saveNow(); }); addEventListener('pagehide', saveNow);
 
@@ -1273,7 +1331,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   var saved = null;
   try { saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { saved = null; }
   if (saved && typeof saved.seed === 'number') {
-    seed = saved.seed; edits = saved.edits || {}; inv = saved.inv || {}; if (saved.hot && saved.hot.length === hot.length) hot = saved.hot; selected = saved.sel || 0; if (saved.wear) wear = saved.wear;
+    seed = saved.seed; edits = saved.edits || {}; inv = saved.inv || {}; if (saved.hot && saved.hot.length === hot.length) hot = saved.hot; selected = saved.sel || 0; if (saved.wear) wear = saved.wear; if (saved.gear) for (var gk in gear) gear[gk] = saved.gear[gk] || 0;
     dayT = saved.day || 0.04; creative = !!saved.cr; peaceful = !!saved.pe; player.hp = saved.hp || 20;
     kid = saved.kid !== false; mIndex = saved.mi || 0; stars = saved.st || 0; siteNo = saved.sn || 0; flags = saved.fl || {}; waypoints = saved.wp || []; base = saved.base || null; musicOn = saved.mu !== false; soundOn = saved.so !== false; if (saved.vr) setView(saved.vr);
   } else { saved = null; seed = Math.floor(Math.random() * 1e9); }
@@ -1331,7 +1389,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
     }
     $('#prog').style.display = progress > 0 ? 'block' : 'none'; if (progress > 0) $('#prog').firstChild.style.width = Math.round(progress * 100) + '%';
     updateCrumbs(dt);
-    updateHand(dt, movingNow && !paused);
+    updateHand(dt, movingNow && !paused); showGlows(now / 1000);
     renderer.clear(); renderer.render(scene, camera); renderer.clearDepth(); renderer.render(handScene, handCam);
     if ((saveClock += dt) > 8) { saveClock = 0; saveSoon(); }
     requestAnimationFrame(frame);
@@ -1339,7 +1397,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
   requestAnimationFrame(frame);
 
   // for automated checks
-  window.__KLODS__ = { get mission() { return mission; }, get mIndex() { return mIndex; }, get stars() { return stars; }, get building() { return !!buildJob; }, get waypoints() { return waypoints; }, get spawn() { return spawnPt; }, get kid() { return kid; }, missionAt: missionAt, TELE: TELE, get misText() { return misText; }, biomeAt: biomeAt, colHeight: colHeight, KINDS: KINDS, openTrade: openTrade, MEAT: MEAT, WH: WH, setView: setView, get view() { return RENDER; }, topOf: topOf, setKid: function (k) { kid = k; }, openMap: openMap, needRows: needRows,
+  window.__KLODS__ = { get mission() { return mission; }, get mIndex() { return mIndex; }, get stars() { return stars; }, get building() { return !!buildJob; }, get waypoints() { return waypoints; }, get spawn() { return spawnPt; }, get kid() { return kid; }, missionAt: missionAt, TELE: TELE, gear: gear, bestTool: bestTool, handId: handId, betterGear: betterGear, SHOVEL: SHOVEL, AXE: AXE, get goals() { return goals; }, glows: glows, breakTime: breakTime, get misText() { return misText; }, biomeAt: biomeAt, colHeight: colHeight, KINDS: KINDS, openTrade: openTrade, MEAT: MEAT, WH: WH, setView: setView, get view() { return RENDER; }, topOf: topOf, setKid: function (k) { kid = k; }, openMap: openMap, needRows: needRows,
     player: player, getBlock: getBlock, setBlock: setBlock, target: function () { return aim; }, hits: function (x, y, z) { return hits(player, x, y, z); }, give: give, count: count, craft: craft, RECIPES: RECIPES,
     spawnMonster: spawnMonster, monsters: monsters, setDay: function (t) { dayT = t; }, light: function () { return dayLight; }, lightAt: lightAt, chunks: chunks, hot: hot, wear: wear, useFromBag: useFromBag, hurt: hurt, armorPoints: armorPoints, save: saveNow,
     ids: { COAL: COAL, LOG: LOG, PLANKS: PLANKS, STICK: STICK, BENCH: BENCH, TORCH: TORCH, COBBLE: COBBLE, IRON: IRON, PICK: PICK, SWORD: SWORD, HELM: HELM, CHEST: CHEST, DIRT: DIRT }, setMode: function (c, p) { creative = c; peaceful = p; drawHotbar(); } };
